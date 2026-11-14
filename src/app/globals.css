@@ -104,11 +104,34 @@
 }
 
 /* Printing (QR sticker sheet): hide site chrome. */
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
 @media print {
-  .no-print {
+  .no-print,
+  [data-sonner-toaster],
+  nextjs-portal {
     display: none !important;
   }
   body {
     background: #fff;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  /* 3 × 6 stickers per A4 page, dashed cut lines */
+  .qr-sticker {
+    height: 44mm;
+    border-radius: 0;
+    border: 0.2mm dashed #bbb;
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .qr-sticker-tall {
+    height: 88mm;
   }
 }

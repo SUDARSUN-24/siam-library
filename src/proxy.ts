@@ -1,23 +1,57 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Optimistic check only: send visitors without a session cookie to the login page.
- * The real authorisation check (valid session + role) happens on the server in every
- * admin page, Server Action and route handler — see src/lib/auth-session.ts.
+ * Runs before every page request:
+ *  1. Content-Security-Policy with a fresh nonce (Next.js adds it to its own scripts).
+ *  2. Optimistic admin check: no session cookie → redirect to /admin/login.
+ *     This is NOT the security boundary — every admin page, Server Action and route
+ *     handler checks the session and role on the server (src/lib/auth-session.ts).
+ * Other security headers (X-Frame-Options, nosniff, ...) are set in next.config.ts.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname === "/admin/login") return NextResponse.next();
 
-  const hasSession =
-    request.cookies.has("authjs.session-token") || request.cookies.has("__Secure-authjs.session-token");
-  if (!hasSession) {
-    const url = new URL("/admin/login", request.url);
-    return NextResponse.redirect(url);
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const hasSession =
+      request.cookies.has("authjs.session-token") || request.cookies.has("__Secure-authjs.session-token");
+    if (!hasSession) return NextResponse.redirect(new URL("/admin/login", request.url));
   }
-  return NextResponse.next();
+
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const isDev = process.env.NODE_ENV === "development";
+  const https = process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://");
+  const csp = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    // inline style attributes (cover colours) and toast styles need 'unsafe-inline' for styles only
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' blob: data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    ...(https ? ["upgrade-insecure-requests"] : []),
+  ].join("; ");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: [
+    {
+      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+  ],
 };

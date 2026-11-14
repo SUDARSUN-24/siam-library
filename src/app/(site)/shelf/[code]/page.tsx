@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { BookGrid } from "@/components/book-card";
+import { canViewPreview } from "@/lib/access";
+import { getViewerSession } from "@/lib/auth-session";
 import { BookQr } from "@/components/book-qr";
 import { getShelfByCode } from "@/lib/books";
 import { fmt } from "@/lib/dict";
@@ -22,7 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/shelf/[code]">): 
 export default async function ShelfPage({ params }: PageProps<"/shelf/[code]">) {
   const shelf = await load(params);
   if (!shelf) notFound();
-  const { locale, t } = await getDict();
+  const [{ locale, t }, session] = await Promise.all([getDict(), getViewerSession()]);
+  const showPhotos = canViewPreview(session);
 
   const rows = [...new Set(shelf.books.map((b) => b.row))].sort((a, b) => a - b);
   const available = shelf.books.filter((b) => b.status === "AVAILABLE").length;
@@ -66,7 +69,7 @@ export default async function ShelfPage({ params }: PageProps<"/shelf/[code]">) 
               {fmt(t.shelfRowHeading, { row })}
               <span className="h-px flex-1 bg-border" aria-hidden="true" />
             </h2>
-            <BookGrid books={shelf.books.filter((b) => b.row === row)} t={t} locale={locale} />
+            <BookGrid books={shelf.books.filter((b) => b.row === row)} t={t} locale={locale} showPhotos={showPhotos} />
           </section>
         ))}
         <div className="mt-12 max-w-md">

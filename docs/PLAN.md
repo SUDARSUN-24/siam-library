@@ -38,11 +38,12 @@
 - [x] `npm run build` passes, commit
 
 ## Phase 5 — QR codes, Thai/English, security, mobile polish
-- [ ] QR code on book page; printable sticker sheet for books and shelves
-- [ ] Thai / English toggle across all pages
-- [ ] Login rate limit, security headers, PREVIEW_ACCESS setting
-- [ ] Mobile polish
-- [ ] `npm run build` passes, commit
+- [x] QR code on book and shelf pages; printable A4 sticker sheet (`/admin/qr`), localhost warning
+- [x] Thai / English toggle across all pages (cookie, works without JS)
+- [x] Security headers + nonce-based CSP (proxy), PREVIEW_ACCESS checked in `canViewPreview()`
+- [x] Verified on the production build: headers, CSP (no violations), students-only mode locks text + photos (403), path traversal → 404
+- [x] Mobile polish: site icon, card photo covers respect PREVIEW_ACCESS, print layout
+- [x] `npm run build` passes, commit
 
 ## Phase 6 — Tests and final docs
 - [ ] Playwright: search, open book, flip pages, staff login, add book

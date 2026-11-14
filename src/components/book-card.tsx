@@ -4,8 +4,10 @@ import { StatusBadge } from "./status-badge";
 import { fmt, type Dict, type Locale } from "@/lib/dict";
 import type { BookCardData } from "@/lib/books";
 
-export function BookCard({ book, t, locale }: { book: BookCardData; t: Dict; locale: Locale }) {
-  const photo = book.pages[0]?.imagePath;
+type CardProps = { book: BookCardData; t: Dict; locale: Locale; /** from canViewPreview() */ showPhotos: boolean };
+
+export function BookCard({ book, t, locale, showPhotos }: CardProps) {
+  const photo = showPhotos ? book.pages[0]?.imagePath : null;
   return (
     <Link
       href={`/book/${book.code}`}
@@ -37,12 +39,12 @@ export function BookCard({ book, t, locale }: { book: BookCardData; t: Dict; loc
   );
 }
 
-export function BookGrid({ books, t, locale }: { books: BookCardData[]; t: Dict; locale: Locale }) {
+export function BookGrid({ books, ...rest }: Omit<CardProps, "book"> & { books: BookCardData[] }) {
   return (
     <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {books.map((b) => (
         <li key={b.id}>
-          <BookCard book={b} t={t} locale={locale} />
+          <BookCard book={b} {...rest} />
         </li>
       ))}
     </ul>

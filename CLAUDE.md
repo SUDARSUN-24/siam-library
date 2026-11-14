@@ -75,15 +75,17 @@ docker compose up -d --build   # full stack on a server
 - Never log passwords or session tokens.
 
 ## Current status
-Phase 4 complete — staff login (Auth.js credentials, JWT 8 h, rate-limited), `/admin`
-books list with one-click borrowed/returned, add/edit book, page photo upload/reorder/delete
-(`POST /api/admin/books/[id]/pages`, one file per request), delete book (ADMIN only).
-Student pages from Phase 3 are done. Docker files are written but NOT tested on this
-machine (no Docker installed). Next: Phase 5 (QR sheet, security headers, polish).
+Phase 5 complete — QR sticker sheet `/admin/qr`, nonce CSP in `src/proxy.ts`, other
+security headers in `next.config.ts`, PREVIEW_ACCESS verified in both modes on a
+production build. Phases 1–4 done (student pages, staff admin, uploads).
+Docker files are written but NOT tested on this machine (no Docker installed).
+Next: Phase 6 (Playwright tests, final docs, REPORT.md).
 
 Auth layout: `src/auth.ts` (Auth.js config), `src/lib/auth-session.ts` (`requireStaff`,
 `requireAdmin`, `assertStaff` for actions, `getStaffUser` for route handlers),
-`src/proxy.ts` (cookie-only redirect, not a security boundary).
+`src/proxy.ts` (CSP nonce + cookie-only redirect for /admin — not a security boundary).
+- Any new page that shows uploaded photos must check `canViewPreview()` first.
+- The proxy CSP blocks inline `<script>`; never add one. Inline `style=` is allowed.
 
 Notes:
 - Prisma 7: client is generated to `src/generated/prisma` (git-ignored); import from

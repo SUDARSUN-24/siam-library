@@ -1,4 +1,6 @@
 import { BookGrid } from "@/components/book-card";
+import { canViewPreview } from "@/lib/access";
+import { getViewerSession } from "@/lib/auth-session";
 import { SearchForm } from "@/components/search-form";
 import { ShelfCard } from "@/components/shelf-card";
 import { getCategories, getShelvesWithCounts, searchBooks } from "@/lib/books";
@@ -16,12 +18,14 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     status: one(raw.status),
   });
 
-  const [{ locale, t }, shelves, categories, books] = await Promise.all([
+  const [{ locale, t }, shelves, categories, books, session] = await Promise.all([
     getDict(),
     getShelvesWithCounts(),
     getCategories(),
     searchBooks(filters),
+    getViewerSession(),
   ]);
+  const showPhotos = canViewPreview(session);
   const filtered = Boolean(filters.q || filters.shelf || filters.category || filters.status);
 
   return (
@@ -67,7 +71,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           </span>
         </div>
         {books.length ? (
-          <BookGrid books={books} t={t} locale={locale} />
+          <BookGrid books={books} t={t} locale={locale} showPhotos={showPhotos} />
         ) : (
           <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
             <p className="font-serif text-lg font-semibold">{t.noResults}</p>
