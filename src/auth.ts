@@ -5,11 +5,13 @@ import { db } from "@/lib/db";
 import { loginSchema } from "@/lib/validation";
 import {
   clientIp,
+  isLimited,
   LOGIN_MAX_PER_ACCOUNT,
   LOGIN_MAX_PER_IP,
+  LOGIN_MAX_PER_IP_ACCOUNT,
   LOGIN_WINDOW_MS,
-  rateLimit,
-  resetRateLimit,
+  recordFailure,
+  resetLimit,
 } from "@/lib/rate-limit";
 
 class RateLimited extends CredentialsSignin {
@@ -32,16 +34,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
+        // Only FAILED attempts count, so staff sharing the library network don't lock each other out.
         const ip = clientIp(request.headers);
-        const perIp = rateLimit(`login:ip:${ip}`, LOGIN_MAX_PER_IP, LOGIN_WINDOW_MS);
-        const perAccount = rateLimit(`login:acct:${ip}:${email}`, LOGIN_MAX_PER_ACCOUNT, LOGIN_WINDOW_MS);
-        if (!perIp.ok || !perAccount.ok) throw new RateLimited();
+        const ipKey = `login:ip:${ip}`;
+        const ipAcctKey = `login:ipacct:${ip}:${email}`;
+        const acctKey = `login:acct:${email}`;
+        if (
+          isLimited(ipAcctKey, LOGIN_MAX_PER_IP_ACCOUNT) ||
+          isLimited(acctKey, LOGIN_MAX_PER_ACCOUNT) ||
+          isLimited(ipKey, LOGIN_MAX_PER_IP)
+        ) {
+          throw new RateLimited();
+        }
 
         const user = await db.user.findUnique({ where: { email } });
         const valid = await bcrypt.compare(password, user?.passwordHash ?? (await getDummyHash()));
-        if (!user || !valid) return null;
+        if (!user || !valid) {
+          for (const k of [ipKey, ipAcctKey, acctKey]) recordFailure(k, LOGIN_WINDOW_MS);
+          return null;
+        }
 
-        resetRateLimit(`login:acct:${ip}:${email}`);
+        resetLimit(ipAcctKey);
+        resetLimit(acctKey);
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

@@ -46,7 +46,16 @@
 - [x] `npm run build` passes, commit
 
 ## Phase 6 — Tests and final docs
-- [ ] Playwright: search, open book, flip pages, staff login, add book
-- [ ] Finish DEPLOYMENT.md and STAFF_GUIDE.md
-- [ ] Write REPORT.md
-- [ ] `npm run build` passes, commit
+- [x] Playwright: search, open book, flip pages (incl. swipe), staff login, rate limit, borrow/return, add book + photos, QR sheet, security
+- [x] 56 tests (desktop + mobile): 53 passed, 3 skipped by design — run twice, repeatable
+- [x] Login limiter fixed: counts failures only; per-email limit that can't be bypassed
+- [x] `npm run user:create` script for real staff accounts / password resets
+- [x] Finish DEPLOYMENT.md and STAFF_GUIDE.md, README.md
+- [x] Write REPORT.md
+- [x] `npm run build` passes, commit
+
+## Not done / not verified
+- [ ] Build and run the Docker images on the university server (no Docker on the dev PC)
+- [ ] Test on real phones and print stickers on real A4 label paper
+- [ ] Staff account management page (CLI script only)
+- [ ] Thai translations for form validation messages

@@ -13,89 +13,104 @@ Student: Sudasun, B.Sc. Information Technology, Siam University (university proj
 
 ## Tech stack
 - Next.js 16 (App Router, Turbopack, `src/` dir) + React 19 + TypeScript
-- Tailwind CSS v4 + shadcn/ui (radix-nova style, lucide icons)
+- Tailwind CSS v4 + shadcn/ui (radix-nova style, lucide icons; `cn` from the `cn` package)
 - PostgreSQL + Prisma 7 (`prisma-client` generator, `@prisma/adapter-pg` driver adapter)
-- Auth.js v5 (`next-auth@5 beta`) — Credentials provider, JWT session, bcrypt hashes (`bcryptjs`)
-- sharp (resize + WebP), `qrcode` (SVG QR codes), zod (validation)
-- Playwright (end-to-end tests)
+- Auth.js v5 (`next-auth@5 beta`) — Credentials provider, JWT session (8 h), bcrypt (`bcryptjs`)
+- sharp (verify + resize + WebP), `qrcode` (SVG QR codes), zod (validation)
+- Playwright (end-to-end tests, desktop Chrome + Pixel 7)
 - Docker + docker-compose (app + postgres) for the university server
-- Local dev database: `embedded-postgres` (real PostgreSQL binaries from npm — no admin install, no Docker needed)
+- Local dev database: `embedded-postgres` (real PostgreSQL from npm — no install, no Docker)
 
 ## Folder structure
 ```
-prisma/              schema.prisma, migrations/, seed.ts, seed-data.ts
-scripts/             dev-db.ts (starts embedded PostgreSQL on port 5433)
-src/app/             routes (App Router)
-  page.tsx           home: search, shelves, filters, book grid
-  book/[code]/       book page + preview viewer
-  shelf/[code]/      shelf page
-  admin/             staff area (login required)
-  api/               route handlers (uploads, served images)
-src/components/      UI components (ui/ = shadcn)
-src/lib/             db, auth, validation, i18n, config, qr, rate-limit, uploads
-tests/               Playwright tests
-uploads/             uploaded preview photos (git-ignored, Docker volume)
-docs/                PLAN.md, DEPLOYMENT.md, STAFF_GUIDE.md
+prisma/                    schema.prisma, migrations/, seed.ts, seed-data.ts (18 books)
+scripts/dev-db.ts          local PostgreSQL on port 5433 (UTF-8), data in .pgdata/
+scripts/create-user.ts     create staff account / reset password (asks for password)
+src/auth.ts                Auth.js config (login, rate limit, role in JWT)
+src/proxy.ts               per-request CSP nonce + cookie-only /admin redirect
+src/app/
+  (site)/                  public: page.tsx (home), book/[code], shelf/[code]
+  admin/login/             login page + action
+  admin/(panel)/           staff pages (layout calls requireStaff): books, books/new,
+                           books/[id], qr
+  admin/actions.ts         staff Server Actions (toggle, save, delete, pages)
+  actions/locale.ts        language toggle
+  api/admin/books/[id]/pages   photo upload (one file per POST)
+  api/uploads/[file]       serves photos from UPLOAD_DIR (access-checked)
+  api/auth/[...nextauth]   Auth.js
+src/components/            book-cover, preview-viewer, page-text, admin/*, ui/ (shadcn)
+src/lib/                   db, auth-session (guards), access (PREVIEW_ACCESS), validation,
+                           dict (all strings), i18n (locale cookie), books (queries),
+                           config, qr, uploads, rate-limit, admin-data
+tests/                     Playwright specs + helpers
+uploads/                   page photos (git-ignored; Docker volume)
+docs/                      PLAN.md, DEPLOYMENT.md, STAFF_GUIDE.md;  REPORT.md at root
 ```
 
 ## Commands (Windows PowerShell)
 ```powershell
-npm install                 # install dependencies
+npm install                 # install dependencies (runs prisma generate)
 npm run db:start            # start local PostgreSQL (keep this window open)
-npm run db:migrate          # apply migrations (dev)
-npm run db:seed             # load 18 demo books + demo logins
+npm run db:migrate          # create/apply migrations (dev)
+npm run db:seed             # 18 demo books + demo logins (re-runnable)
 npm run dev                 # http://localhost:3000
-npm run build               # production build (must pass after each phase)
+npm run build               # production build (must pass after every change)
 npm run lint                # ESLint (next build no longer lints)
-npm run test:e2e            # Playwright tests (needs db running + seeded)
-docker compose up -d --build   # full stack on a server
+npm run test:e2e            # Playwright (needs db running + seeded; reuses :3000)
+npm run user:create -- <email> <name> <ADMIN|STAFF>
+docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
 ```
+Demo logins (seed): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
 
 ## Coding rules
-- Next 16: `params` / `searchParams` are Promises — always `await` them. `middleware.ts` is now `src/proxy.ts`.
+- Next 16: `params` / `searchParams` are Promises — always `await` them. Middleware is `src/proxy.ts`.
 - Read `node_modules/next/dist/docs/` before using an unfamiliar Next API (see AGENTS.md).
-- Server Components by default; add `"use client"` only for interactivity (viewer, upload, toggles).
-- All DB access through `src/lib/db.ts` (single Prisma client). No raw SQL except search.
-- All UI strings come from `src/lib/i18n.ts` (Thai + English). Never hard-code one language.
-- Colours/fonts via CSS variables in `globals.css` — off-white `#f5f2ec`, ink `#1d2433`, crimson `#9b1c2e`.
-- Mobile-first: design at 375 px, then widen.
-- Keep components small; shared helpers in `src/lib/`.
+- Server Components by default; `"use client"` only for interactivity (viewer, upload, selects).
+- All DB access through `src/lib/db.ts` (single Prisma client). No raw SQL.
+- All UI strings live in `src/lib/dict.ts` (Thai + English; TS enforces both). Server code
+  gets them via `getDict()`; client components get `t` as a prop or import `dictionaries`.
+- Colours as CSS variables in `globals.css` — off-white `#f5f2ec`, ink `#1d2433`, crimson `#9b1c2e`.
+- Mobile-first: check at 390 px. Grids holding horizontally-scrolling children need
+  `grid-cols-[minmax(0,1fr)]` / `min-w-0`, or the page overflows on phones.
+- Thai typography: never letter-space or justify Thai. Use the `eyebrow` and `prose-justify`
+  utilities (they only apply to `:lang(en)`); give book text the book's own `lang`.
+- `cacheComponents` / `partialPrefetching` are OFF on purpose: every page reads the
+  language cookie and live loan status, so all routes render dynamically.
+- Prisma 7: client generated to `src/generated/prisma` (git-ignored); import from
+  `@/generated/prisma/client`. Config in `prisma.config.ts` (seed command too).
+- Text page markup (`#`, `##`, `###`, `>`, `toc: Title::page`) is documented in
+  `src/components/page-text.tsx`.
+- After adding routes, `npx next typegen` refreshes `PageProps`/`RouteContext` types.
+- If the dev server reports "X is not a function" after editing a module, restart it (stale HMR).
 
 ## Security rules
-- Every admin page calls `requireStaff()` / `requireAdmin()` on the server; every admin
-  Server Action and admin route handler checks again — the proxy redirect is only a convenience.
+- Every admin page calls `requireStaff()` / `requireAdmin()`; every Server Action calls
+  `assertStaff()` (ADMIN-only actions: `assertStaff("ADMIN")`); route handlers use
+  `getStaffUser()`. These re-read the user from the DB. The proxy redirect is NOT security.
 - Validate every input with zod (`src/lib/validation.ts`) before touching the DB.
-- Login is rate-limited (`src/lib/rate-limit.ts`): 5 attempts / 15 min per IP + email.
-- Uploads: images only (checked by sharp decoding, not just MIME), max 10 MB, max 10 pages
-  per book, re-encoded to WebP, random filenames (`crypto.randomUUID`), stored outside `public/`.
+- Login rate limit (in `authorize()`, failures only, 15 min): 5 per email+IP, 10 per email
+  (any IP — cannot be bypassed by forging X-Forwarded-For), 50 per IP. In-memory.
+- Uploads: must decode with sharp (MIME not trusted), ≤10 MB, ≤10 pages/book, re-encoded to
+  WebP (strips EXIF/GPS), random `uuid.webp` names, stored outside `public/`, served only
+  through `/api/uploads/[file]` which accepts only `uuid.webp` names.
 - Secrets only in `.env` (git-ignored). `.env.example` lists every variable with dummy values.
-- Security headers set in `next.config.ts` (CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy).
-- Who may read previews is decided in ONE place: `canViewPreview()` in `src/lib/access.ts`,
-  driven by the `PREVIEW_ACCESS` setting (`public` now; `students` later).
+- CSP with per-request nonce in `src/proxy.ts` (never add inline `<script>`; inline
+  `style=` is allowed). Other headers (X-Frame-Options, nosniff, Referrer-Policy,
+  Permissions-Policy, HSTS on https) in `next.config.ts`.
+- Who may read previews is decided in ONE place: `canViewPreview()` in `src/lib/access.ts`
+  (`PREVIEW_ACCESS` = `public` now; `students` later). Anything showing page text or
+  photos — including book cards — must call it.
 - Never log passwords or session tokens.
 
 ## Current status
-Phase 5 complete — QR sticker sheet `/admin/qr`, nonce CSP in `src/proxy.ts`, other
-security headers in `next.config.ts`, PREVIEW_ACCESS verified in both modes on a
-production build. Phases 1–4 done (student pages, staff admin, uploads).
-Docker files are written but NOT tested on this machine (no Docker installed).
-Next: Phase 6 (Playwright tests, final docs, REPORT.md).
+**All 6 phases complete** (see docs/PLAN.md).
+- Student pages, staff admin, uploads, QR sheet, Thai/English, security headers done.
+- Playwright: 56 tests (28 × desktop + mobile) → 53 passed, 3 skipped by design; repeatable.
+- Docs: DEPLOYMENT.md, STAFF_GUIDE.md, REPORT.md written.
 
-Auth layout: `src/auth.ts` (Auth.js config), `src/lib/auth-session.ts` (`requireStaff`,
-`requireAdmin`, `assertStaff` for actions, `getStaffUser` for route handlers),
-`src/proxy.ts` (CSP nonce + cookie-only redirect for /admin — not a security boundary).
-- Any new page that shows uploaded photos must check `canViewPreview()` first.
-- The proxy CSP blocks inline `<script>`; never add one. Inline `style=` is allowed.
-
-Notes:
-- Prisma 7: client is generated to `src/generated/prisma` (git-ignored); import from
-  `@/generated/prisma/client`. Config lives in `prisma.config.ts` (seed command too).
-- Text page markup is documented at the top of `prisma/seed.ts` and `src/components/page-text.tsx`.
-- `cacheComponents` / `partialPrefetching` are OFF in next.config.ts on purpose: every
-  page reads the language cookie and live loan status, so all routes render dynamically.
-- Thai typography: never use letter-spacing or `text-align: justify` on Thai. Use the
-  `eyebrow` and `prose-justify` utilities (globals.css) — they only apply to `:lang(en)`.
-- Grids that hold horizontally-scrolling children need `grid-cols-[minmax(0,1fr)]` /
-  `min-w-0`, or the page overflows on phones.
-- `NEXT_PUBLIC_SITE_URL` is read on the server only (QR codes), so it can be changed at
-  runtime without rebuilding.
+Known gaps / not verified:
+- Docker images were never built or run (Docker not installed on the dev PC).
+- Only emulated phones tested; QR stickers not printed on real paper.
+- No web UI for staff accounts (use `npm run user:create`).
+- Zod error messages on the book form are English-only (Thai UI shows them in English).
+- End-of-preview text says the counter is on the ground floor — placeholder; confirm with the library.
