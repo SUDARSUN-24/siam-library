@@ -6,6 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
  *   npm run db:seed
  *   npm run test:e2e
  * Uses an already-running server on :3000 if there is one, otherwise starts `npm run dev`.
+ * Live site:  E2E_BASE_URL=https://... (+ SEED_*_EMAIL/PASSWORD for the real accounts) — see DEPLOYMENT.md.
  */
 export default defineConfig({
   testDir: "./tests",
@@ -23,10 +24,8 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Testing a deployed site (E2E_BASE_URL=https://...) → no local server.
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : { command: "npm run dev", url: "http://localhost:3000", reuseExistingServer: true, timeout: 120_000 },
 });

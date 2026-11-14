@@ -1,5 +1,8 @@
 # Deployment — Siam University Library Book Preview
 
+**Live site:** https://siam-library.vercel.app (Vercel + Neon Postgres + Vercel Blob, see §3).
+Local development (§1) still works exactly as before; Docker (§4) is the self-hosted alternative.
+
 ## 1. Run locally (Windows, PowerShell)
 
 Requirements: **Node.js 20.9+** (developed on Node 26) and Git. No PostgreSQL or Docker
@@ -36,19 +39,124 @@ npm run test:e2e                   # needs db:start running and the seed loaded
 
 | Variable | Example | Purpose |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5433/siam_library` | PostgreSQL connection (docker-compose builds its own) |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5433/siam_library` | PostgreSQL connection used by the app (docker-compose builds its own; on Vercel the **pooled** Neon URL) |
+| `DATABASE_URL_UNPOOLED` | *(Vercel/Neon only)* | **Direct** Neon connection used by Prisma CLI (`migrate deploy`). Unset locally → falls back to `DATABASE_URL` |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `library` / *strong password* / `siam_library` | Database account created by docker-compose |
 | `AUTH_SECRET` | 32+ random characters | Signs staff login sessions. Generate: `npx auth secret` |
 | `AUTH_TRUST_HOST` | `true` | Needed behind Docker / a reverse proxy |
-| `NEXT_PUBLIC_SITE_URL` | `https://library.siam.edu` | Address printed inside QR codes. **Set before printing stickers.** Read at runtime — no rebuild needed |
-| `PREVIEW_ACCESS` | `public` | `public` = anyone can read previews; `students` = signed-in users only (see §6) |
-| `UPLOAD_DIR` | `./uploads` | Folder for page photos (outside `public/`) |
+| `NEXT_PUBLIC_SITE_URL` | `https://library.siam.edu` | Address printed inside QR codes; also turns on HSTS / secure cookies when `https://`. **Set before printing stickers.** `NEXT_PUBLIC_*` values are baked in at build time — after changing it, rebuild (Docker) or redeploy (Vercel) |
+| `PREVIEW_ACCESS` | `public` | `public` = anyone can read previews; `students` = signed-in users only (see §7) |
+| `UPLOAD_DIR` | `./uploads` | Folder for page photos (outside `public/`) when Blob is not used |
+| `BLOB_READ_WRITE_TOKEN` | *(Vercel only)* | When set, page photos go to the **private** Vercel Blob store instead of `UPLOAD_DIR` |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | | Only used by `npm run db:seed` |
 | `SEED_STAFF_EMAIL` / `SEED_STAFF_PASSWORD` | | Only used by `npm run db:seed` |
 
-`.env` is git-ignored. Never commit real secrets.
+`.env` and `.env.local` are git-ignored (and excluded from `vercel deploy` by `.vercelignore`).
+Never commit real secrets.
 
-## 3. Deploy on a university server with Docker
+> `vercel link` / `vercel env pull` write a `.env.local`. Next.js loads `.env.local` **over**
+> `.env`, so never pull Production values into it — local dev would then use the live
+> database. Pull them to a file outside the project when you need them (see §3).
+
+## 3. Deploying on Vercel
+
+This is how the live site https://siam-library.vercel.app runs.
+
+| Piece | Service | Notes |
+|---|---|---|
+| App | Vercel (Next.js, serverless functions in `iad1` / Washington D.C.) | Project `siam-library`; build = `next build`, `postinstall` runs `prisma generate` |
+| Database | **Neon** Postgres (free plan, `us-east-1`), added through the Vercel Marketplace | Close to `iad1`, so each query is fast |
+| Page photos | **Vercel Blob**, store `siam-library-photos`, **private** access | Not reachable by URL — served only through `/api/uploads/[file]` after `canViewPreview()` |
+| Rate limit | `LoginThrottle` table in Neon | Works across serverless instances |
+
+### What changed in the code for Vercel
+- **Database URLs.** The app connects with the pooled `DATABASE_URL`. Prisma CLI uses
+  `DATABASE_URL_UNPOOLED` (direct) through `prisma.config.ts`. Prisma 7 removed
+  `directUrl` from `schema.prisma`; the config file's `datasource.url` replaces it.
+- **Photo storage** (`src/lib/storage.ts`): one `PhotoStorage` interface, two
+  implementations — local disk (`UPLOAD_DIR`) and private Vercel Blob (`pages/<uuid>.webp`),
+  chosen by whether `BLOB_READ_WRITE_TOKEN` is set. sharp still verifies and re-encodes
+  every photo to WebP before it is stored.
+- **Upload size.** Vercel rejects request bodies over 4.5 MB. On Vercel the browser
+  compresses each photo below **4 MB** before upload (smaller size / lower JPEG quality
+  until it fits). A Playwright test uploads a noisy 3000×4000 photo (well over 4.5 MB) to prove it.
+- **Login rate limit** moved from memory to the database (`src/lib/rate-limit.ts`).
+- `.vercelignore` keeps `.env*`, `.pgdata/`, `uploads/` etc. out of CLI uploads. Its
+  patterns start with `/` — a bare `uploads/` also matched `src/app/api/uploads/` and
+  silently removed the image route from the deployment.
+
+### Production environment variables
+Set in Vercel → Project → Settings → Environment Variables (Production):
+
+| Variable | Source |
+|---|---|
+| `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (+ other `PG*` / `POSTGRES_*`) | added automatically by the Neon integration |
+| `BLOB_READ_WRITE_TOKEN` | added automatically when the Blob store is connected (Production + Preview only, so local dev keeps using disk) |
+| `AUTH_SECRET` | random 48 bytes, stored as *sensitive* |
+| `AUTH_TRUST_HOST` | `true` |
+| `PREVIEW_ACCESS` | `public` |
+| `NEXT_PUBLIC_SITE_URL` | `https://siam-library.vercel.app` |
+
+### First-time setup (what was done)
+```powershell
+npm i -g vercel
+vercel login
+vercel link --yes --project siam-library
+# Database: Vercel dashboard → Storage → Create Database → Neon (free) → connect to the project
+#   (or: vercel integration add neon — needs the Neon terms accepted in the browser first)
+vercel blob create-store siam-library-photos --access private --yes --environment production --environment preview
+node -e "process.stdout.write(require('crypto').randomBytes(48).toString('base64'))" | vercel env add AUTH_SECRET production --sensitive
+# ...then AUTH_TRUST_HOST, PREVIEW_ACCESS, NEXT_PUBLIC_SITE_URL the same way
+vercel --prod
+```
+
+### Migrations and seed against Neon
+Pull the Production variables to a file **outside** the project, load them into the
+shell, and run Prisma from your PC:
+```powershell
+vercel env pull $env:TEMP\siam-prod.env --environment production --yes
+Get-Content $env:TEMP\siam-prod.env | ForEach-Object {
+  if ($_ -match '^(DATABASE_URL(_UNPOOLED)?)="(.*)"$') { Set-Item "env:$($Matches[1])" $Matches[3] } }
+npm run db:deploy                      # prisma migrate deploy (uses the direct URL)
+# Seed only once, with NEW strong passwords (never the demo ones):
+$env:SEED_ADMIN_EMAIL="admin@library.siam.edu"; $env:SEED_ADMIN_PASSWORD="<strong random>"
+$env:SEED_STAFF_EMAIL="staff@library.siam.edu"; $env:SEED_STAFF_PASSWORD="<strong random>"
+npm run db:seed
+Remove-Item $env:TEMP\siam-prod.env    # it contains the database password
+```
+Re-running the seed **replaces the 18 demo books** (and their loan status) — do not run it
+once staff have started editing real data. To add or reset a staff account on the live site,
+load the variables the same way and run `npm run user:create -- <email> <name> <ADMIN|STAFF>`.
+
+Migrations are **not** run during the Vercel build (preview deployments share the same
+database). After a schema change: `npm run db:deploy` against Neon first, then `vercel --prod`.
+
+### Deploying an update
+```powershell
+npm run build          # must pass locally
+vercel --prod          # build logs stream to the terminal; also in the Vercel dashboard
+vercel logs --environment production --since 15m    # runtime errors
+```
+
+### Testing the live site
+```powershell
+$env:E2E_BASE_URL="https://siam-library.vercel.app"
+$env:SEED_ADMIN_EMAIL="admin@library.siam.edu"; $env:SEED_ADMIN_PASSWORD="<live admin password>"
+$env:SEED_STAFF_EMAIL="staff@library.siam.edu"; $env:SEED_STAFF_PASSWORD="<live staff password>"
+npm run test:e2e       # no local server is started when E2E_BASE_URL is set
+```
+The tests restore what they change (book A-002 borrowed → returned; the test book and its
+photos are deleted). If a run fails half-way, check the admin list for a leftover
+"Playwright Test Novel" and delete it (ADMIN account), or the QR/home counts will be off.
+
+### Vercel limits to know
+- Function request body: 4.5 MB (handled by browser compression).
+- Free (Hobby) plan is for non-commercial use. The Neon free plan suspends the database
+  when idle, so the first request after a quiet period can take a second or two longer.
+- Preview deployments (`vercel` without `--prod`) use the **same** Neon database and Blob
+  store, and are protected by Vercel Authentication.
+
+## 4. Deploy on a university server with Docker (alternative)
 
 > **Not yet tested:** the Dockerfile and docker-compose.yml were written for this
 > project but could not be run on the development PC (Docker is not installed there).
@@ -110,7 +218,7 @@ git pull
 docker compose up -d --build        # migrations run automatically on start
 ```
 
-## 4. Backups
+## 5. Backups (Docker)
 ```bash
 # database
 docker compose exec db pg_dump -U library siam_library > backup-$(date +%F).sql
@@ -121,7 +229,7 @@ docker run --rm -v siam-library_uploads:/data -v "$PWD":/backup alpine \
 Restore: `cat backup.sql | docker compose exec -T db psql -U library siam_library`.
 (The volume name prefix is the folder name; check with `docker volume ls`.)
 
-## 5. Demo logins (from the seed)
+## 6. Demo logins (local / Docker seed only)
 
 | Role | Email | Password |
 |---|---|---|
@@ -129,17 +237,21 @@ Restore: `cat backup.sql | docker compose exec -T db psql -U library siam_librar
 | Staff | `staff@library.siam.edu` | `SiamStaff2026!` |
 
 These come from `SEED_*` in `.env`. **Change them (or don't seed) on a public server.**
+They do **not** work on the live Vercel site, which was seeded with different, randomly
+generated passwords (not written in any file — ask the project owner).
 Admin can do everything Staff can, plus delete books.
 
-## 6. Switching previews to students-only
-Set `PREVIEW_ACCESS=students` and restart. The book page then shows a lock message and
+## 7. Switching previews to students-only
+Set `PREVIEW_ACCESS=students` and restart (Vercel: change the variable and redeploy). The book page then shows a lock message and
 page photos return 403 to anyone not signed in. The rule lives in one function,
 `canViewPreview()` in `src/lib/access.ts`. Today only staff can sign in; to let students
 in, add a student login (e.g. university SSO through another Auth.js provider) — no other
 code needs to change.
 
-## 7. Notes and limits
-- The login rate limiter is in memory: fine for one app container; it resets when the app
-  restarts. Use Redis or the database if you ever run several app containers.
-- IP-based limits rely on `X-Forwarded-For`; the per-email limit (10 failures / 15 min)
-  is the real brute-force protection and cannot be bypassed by forging that header.
+## 8. Notes and limits
+- The login rate limiter stores its counters in the database (`LoginThrottle` table), so
+  it holds across Vercel's serverless instances and app restarts. Expired rows are cleaned
+  up automatically.
+- IP-based limits rely on `X-Forwarded-For`. Vercel sets this header itself (clients
+  cannot forge it there); behind your own nginx it depends on the proxy. The per-email
+  limit (10 failures / 15 min) is the real brute-force protection either way.

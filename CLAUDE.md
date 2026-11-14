@@ -11,6 +11,9 @@ has a QR code that opens its page — most students arrive from a QR scan on the
 
 Student: Sudasun, B.Sc. Information Technology, Siam University (university project).
 
+**Live site (main target): https://siam-library.vercel.app** — Vercel + Neon Postgres +
+private Vercel Blob. Local dev must keep working too. See docs/DEPLOYMENT.md §3.
+
 ## Tech stack
 - Next.js 16 (App Router, Turbopack, `src/` dir) + React 19 + TypeScript
 - Tailwind CSS v4 + shadcn/ui (radix-nova style, lucide icons; `cn` from the `cn` package)
@@ -18,7 +21,9 @@ Student: Sudasun, B.Sc. Information Technology, Siam University (university proj
 - Auth.js v5 (`next-auth@5 beta`) — Credentials provider, JWT session (8 h), bcrypt (`bcryptjs`)
 - sharp (verify + resize + WebP), `qrcode` (SVG QR codes), zod (validation)
 - Playwright (end-to-end tests, desktop Chrome + Pixel 7)
-- Docker + docker-compose (app + postgres) for the university server
+- **Hosting: Vercel** (project `siam-library`, functions in `iad1`), **Neon** Postgres
+  (`us-east-1`, via Vercel Marketplace), **Vercel Blob** private store `siam-library-photos`
+- Docker + docker-compose (app + postgres) — alternative for a university server
 - Local dev database: `embedded-postgres` (real PostgreSQL from npm — no install, no Docker)
 
 ## Folder structure
@@ -36,14 +41,16 @@ src/app/
   admin/actions.ts         staff Server Actions (toggle, save, delete, pages)
   actions/locale.ts        language toggle
   api/admin/books/[id]/pages   photo upload (one file per POST)
-  api/uploads/[file]       serves photos from UPLOAD_DIR (access-checked)
+  api/uploads/[file]       serves photos from storage — disk or private Blob (access-checked)
   api/auth/[...nextauth]   Auth.js
 src/components/            book-cover, preview-viewer, page-text, admin/*, ui/ (shadcn)
 src/lib/                   db, auth-session (guards), access (PREVIEW_ACCESS), validation,
                            dict (all strings), i18n (locale cookie), books (queries),
-                           config, qr, uploads, rate-limit, admin-data
+                           config, qr, uploads (sharp), storage (disk | Vercel Blob),
+                           rate-limit (DB table LoginThrottle), admin-data
 tests/                     Playwright specs + helpers
-uploads/                   page photos (git-ignored; Docker volume)
+uploads/                   page photos when Blob is not used (git-ignored; Docker volume)
+.vercelignore              keeps .env*, .pgdata, uploads out of `vercel deploy` (root-anchored!)
 docs/                      PLAN.md, DEPLOYMENT.md, STAFF_GUIDE.md;  REPORT.md at root
 ```
 
@@ -59,8 +66,16 @@ npm run lint                # ESLint (next build no longer lints)
 npm run test:e2e            # Playwright (needs db running + seeded; reuses :3000)
 npm run user:create -- <email> <name> <ADMIN|STAFF>
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
+
+# Vercel (CLI is installed globally and logged in; project already linked in .vercel/)
+vercel --prod                  # deploy production
+vercel logs --environment production --since 15m
+vercel env pull <file OUTSIDE the repo> --environment production --yes   # never into .env.local
+npm run db:deploy              # with DATABASE_URL(_UNPOOLED) from Neon loaded → migrate live DB
+$env:E2E_BASE_URL="https://siam-library.vercel.app"; npm run test:e2e   # + SEED_* = live logins
 ```
-Demo logins (seed): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
+Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
+The live site uses the same emails with different random passwords — never write those into a file.
 
 ## Coding rules
 - Next 16: `params` / `searchParams` are Promises — always `await` them. Middleware is `src/proxy.ts`.
@@ -82,6 +97,11 @@ Demo logins (seed): admin@library.siam.edu / SiamAdmin2026! · staff@library.sia
   `src/components/page-text.tsx`.
 - After adding routes, `npx next typegen` refreshes `PageProps`/`RouteContext` types.
 - If the dev server reports "X is not a function" after editing a module, restart it (stale HMR).
+- Prisma 7 `migrate dev` does NOT regenerate the client — run `npx prisma generate` after it.
+- Nothing may depend on local disk or long-running processes (Vercel is serverless):
+  photos go through `storage` (src/lib/storage.ts), shared state goes in the database.
+- Prisma 7 has no `directUrl`: the CLI uses `DATABASE_URL_UNPOOLED ?? DATABASE_URL`
+  (prisma.config.ts); the app uses the pooled `DATABASE_URL` (src/lib/db.ts).
 
 ## Security rules
 - Every admin page calls `requireStaff()` / `requireAdmin()`; every Server Action calls
@@ -89,11 +109,15 @@ Demo logins (seed): admin@library.siam.edu / SiamAdmin2026! · staff@library.sia
   `getStaffUser()`. These re-read the user from the DB. The proxy redirect is NOT security.
 - Validate every input with zod (`src/lib/validation.ts`) before touching the DB.
 - Login rate limit (in `authorize()`, failures only, 15 min): 5 per email+IP, 10 per email
-  (any IP — cannot be bypassed by forging X-Forwarded-For), 50 per IP. In-memory.
+  (any IP — cannot be bypassed by forging X-Forwarded-For), 50 per IP. Stored in the
+  database (`LoginThrottle`) so it holds across serverless instances.
 - Uploads: must decode with sharp (MIME not trusted), ≤10 MB, ≤10 pages/book, re-encoded to
-  WebP (strips EXIF/GPS), random `uuid.webp` names, stored outside `public/`, served only
-  through `/api/uploads/[file]` which accepts only `uuid.webp` names.
-- Secrets only in `.env` (git-ignored). `.env.example` lists every variable with dummy values.
+  WebP (strips EXIF/GPS), random `uuid.webp` names, stored outside `public/` (disk) or in the
+  PRIVATE Blob store as `pages/<uuid>.webp`, served only through `/api/uploads/[file]`
+  (access-checked) which accepts only `uuid.webp` names. On Vercel (request body ≤4.5 MB)
+  the browser compresses each photo below 4 MB (`config.clientUploadBytes`).
+- Secrets only in `.env` / `.env.local` (git-ignored) and Vercel env vars. `.env.example`
+  lists every variable with dummy values.
 - CSP with per-request nonce in `src/proxy.ts` (never add inline `<script>`; inline
   `style=` is allowed). Other headers (X-Frame-Options, nosniff, Referrer-Policy,
   Permissions-Policy, HSTS on https) in `next.config.ts`.
@@ -103,13 +127,16 @@ Demo logins (seed): admin@library.siam.edu / SiamAdmin2026! · staff@library.sia
 - Never log passwords or session tokens.
 
 ## Current status
-**All 6 phases complete** (see docs/PLAN.md).
+**All 6 phases complete + Phase 7: live on Vercel** (see docs/PLAN.md).
+- Live: https://siam-library.vercel.app — Playwright against it: 53 passed, 3 skipped.
 - Student pages, staff admin, uploads, QR sheet, Thai/English, security headers done.
 - Playwright: 56 tests (28 × desktop + mobile) → 53 passed, 3 skipped by design; repeatable.
 - Docs: DEPLOYMENT.md, STAFF_GUIDE.md, REPORT.md written.
 
 Known gaps / not verified:
 - Docker images were never built or run (Docker not installed on the dev PC).
+- Git repo is not connected to Vercel — deploys are manual `vercel --prod` from this PC.
+- Preview deployments would share the production Neon DB and Blob store.
 - Only emulated phones tested; QR stickers not printed on real paper.
 - No web UI for staff accounts (use `npm run user:create`).
 - Zod error messages on the book form are English-only (Thai UI shows them in English).

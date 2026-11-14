@@ -79,7 +79,7 @@ export default async function EditBookPage({ params, searchParams }: PageProps<"
         <h2 id="pages-h" className="mb-3 font-serif text-lg font-semibold">
           {t.adminPages}
         </h2>
-        <PagesManager t={t} bookId={book.id} pages={pages} maxPages={config.maxPagesPerBook} maxBytes={config.maxUploadBytes} />
+        <PagesManager t={t} bookId={book.id} pages={pages} maxPages={config.maxPagesPerBook} maxBytes={config.clientUploadBytes} />
       </section>
 
       <section className="rounded-xl border border-border bg-card/60 p-4 sm:p-6" aria-labelledby="details-h">

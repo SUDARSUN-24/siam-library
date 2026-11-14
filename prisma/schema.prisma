@@ -85,3 +85,13 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+/// Failed-login counters for the rate limiter (one row per key, fixed window).
+/// Kept in the database so the limit holds across serverless instances (Vercel).
+model LoginThrottle {
+  key     String   @id // "login:acct:<email>", "login:ip:<ip>", ...
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}

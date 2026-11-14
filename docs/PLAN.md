@@ -54,8 +54,19 @@
 - [x] Write REPORT.md
 - [x] `npm run build` passes, commit
 
+## Phase 7 — Deploy on Vercel
+- [x] Neon Postgres via Vercel Marketplace; pooled URL for the app, direct URL for Prisma CLI (`prisma.config.ts`)
+- [x] `PhotoStorage` interface: disk (local/Docker) + private Vercel Blob (when `BLOB_READ_WRITE_TOKEN` is set)
+- [x] Login rate limiter moved to the database (`LoginThrottle`)
+- [x] Browser compresses photos below 4 MB on Vercel (4.5 MB body limit); test with a >4.5 MB photo
+- [x] `.vercelignore`; production env vars (new AUTH_SECRET, site URL); migrate + seed Neon with new passwords
+- [x] `vercel --prod`; NEXT_PUBLIC_SITE_URL set to the real URL and redeployed (QR codes → live site)
+- [x] Playwright against the live site: 53 passed, 3 skipped; test data removed
+- [x] DEPLOYMENT.md §3, REPORT.md §7, CLAUDE.md updated
+
 ## Not done / not verified
 - [ ] Build and run the Docker images on the university server (no Docker on the dev PC)
+- [ ] Connect the Git repository to Vercel (automatic deploys); separate DB branch for preview deploys
 - [ ] Test on real phones and print stickers on real A4 label paper
 - [ ] Staff account management page (CLI script only)
 - [ ] Thai translations for form validation messages

@@ -1,0 +1,13 @@
+# Never upload secrets or local-only data with `vercel deploy`.
+# Patterns start with "/" so they match only at the project root
+# ("uploads/" alone would also drop src/app/api/uploads/!).
+/.env
+/.env.*
+!/.env.example
+/.pgdata/
+/uploads/
+/src/generated/
+/.next/
+/node_modules/
+/test-results/
+/playwright-report/

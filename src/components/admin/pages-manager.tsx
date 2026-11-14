@@ -22,20 +22,33 @@ function errorText(t: Dict, code: string, maxPages: number): string | undefined 
   }[code];
 }
 
-/** Shrink big phone photos before upload (saves mobile data; converts HEIC on iPhone). */
-async function downscale(file: File): Promise<Blob> {
+/**
+ * Shrink big phone photos before upload (saves mobile data; converts HEIC on iPhone).
+ * Keeps the result under `maxBytes` — on Vercel that is 4 MB, because serverless functions
+ * reject request bodies over 4.5 MB. Tries smaller sizes / lower quality until it fits.
+ */
+async function downscale(file: File, maxBytes: number): Promise<Blob> {
+  let bitmap: ImageBitmap;
   try {
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.88));
-    return blob && blob.size < file.size ? blob : file;
+    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
-    return file; // the server validates and converts anyway
+    return file; // not decodable here — the server validates (and rejects) it
+  }
+  try {
+    let best: Blob = file;
+    for (const [side, quality] of [[2000, 0.88], [2000, 0.75], [1600, 0.7], [1200, 0.65]] as const) {
+      const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", quality));
+      if (blob && blob.size < best.size) best = blob;
+      if (best.size <= maxBytes) break;
+    }
+    return best;
+  } finally {
+    bitmap.close();
   }
 }
 
@@ -60,7 +73,7 @@ export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
         toast.error(`${file.name}: ${t.uploadErrNotImage}`);
         continue;
       }
-      const blob = await downscale(file);
+      const blob = await downscale(file, maxBytes);
       if (blob.size > maxBytes) {
         toast.error(`${file.name}: ${t.uploadErrTooLarge}`);
         continue;
@@ -71,7 +84,8 @@ export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
         const res = await fetch(`/api/admin/books/${bookId}/pages`, { method: "POST", body });
         if (res.ok) ok++;
         else {
-          const { error } = await res.json().catch(() => ({ error: "" }));
+          // Vercel's own 413 (body over 4.5 MB) is plain text, not our JSON.
+          const { error } = await res.json().catch(() => ({ error: res.status === 413 ? "too_large" : "" }));
           toast.error(`${file.name}: ${errorText(t, error, maxPages) ?? res.statusText}`);
           if (error === "full" || error === "unauthorized") break;
         }

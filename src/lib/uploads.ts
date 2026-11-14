@@ -1,9 +1,8 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import sharp from "sharp";
 import { config } from "./config";
+import { storage } from "./storage";
 import { uploadFileNameSchema } from "./validation";
 
 export class UploadError extends Error {
@@ -17,7 +16,7 @@ export class UploadError extends Error {
  * - The file must DECODE as an image (we do not trust the MIME type or extension).
  * - EXIF orientation is applied, then all metadata (incl. GPS) is stripped.
  * - Resized to fit 1600×2200 and re-encoded as WebP (quality 80).
- * Returns the random file name stored in UPLOAD_DIR.
+ * Returns the random file name kept in storage (UPLOAD_DIR or Vercel Blob, see storage.ts).
  */
 export async function savePagePhoto(file: File): Promise<string> {
   if (file.size === 0) throw new UploadError("empty");
@@ -42,8 +41,7 @@ export async function savePagePhoto(file: File): Promise<string> {
   }
 
   const name = `${randomUUID()}.webp`;
-  await mkdir(config.uploadDir, { recursive: true });
-  await writeFile(path.join(config.uploadDir, name), output, { flag: "wx" });
+  await storage.save(name, output);
   return name;
 }
 
@@ -51,5 +49,5 @@ export async function savePagePhoto(file: File): Promise<string> {
 export async function deletePagePhoto(name: string | null | undefined) {
   const parsed = uploadFileNameSchema.safeParse(name);
   if (!parsed.success) return;
-  await unlink(path.join(config.uploadDir, parsed.data)).catch(() => {});
+  await storage.remove(parsed.data);
 }

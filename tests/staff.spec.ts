@@ -84,22 +84,29 @@ test("add a book with photo pages, see it publicly, then delete it", async ({ pa
   await page.getByTestId("save-book").click();
   await expect(page.getByTestId("book-created")).toContainText(code);
 
-  // two real photos + one fake "image"
+  // two real photos, one huge phone-camera photo, one fake "image"
   const photo = (bg: string) =>
     sharp({ create: { width: 1200, height: 1700, channels: 3, background: bg } }).jpeg().toBuffer();
+  // Random noise barely compresses: a 3000×4000 JPEG of it is far over Vercel's 4.5 MB
+  // request limit, so it only uploads if the browser compresses it first.
+  const noise = Buffer.alloc(3000 * 4000 * 3);
+  for (let i = 0; i < noise.length; i++) noise[i] = (Math.random() * 256) | 0;
+  const big = await sharp(noise, { raw: { width: 3000, height: 4000, channels: 3 } }).jpeg({ quality: 92 }).toBuffer();
+  expect(big.length).toBeGreaterThan(4.5 * 1024 * 1024);
   await page.getByTestId("page-upload").setInputFiles([
     { name: "cover.jpg", mimeType: "image/jpeg", buffer: await photo("#7a3b5e") },
     { name: "contents.jpg", mimeType: "image/jpeg", buffer: await photo("#f3ecdf") },
+    { name: "phone-photo.jpg", mimeType: "image/jpeg", buffer: big },
     { name: "fake.jpg", mimeType: "image/jpeg", buffer: Buffer.from("definitely not a jpeg") },
   ]);
-  await expect(page.getByTestId("managed-page")).toHaveCount(2, { timeout: 20_000 });
+  await expect(page.getByTestId("managed-page")).toHaveCount(3, { timeout: 40_000 });
   await expect(page.getByText("fake.jpg: Only image files can be uploaded.")).toBeVisible();
 
-  // public page: photo cover + 2 pages + end page
+  // public page: photo cover + 3 pages + end page
   const pub = await page.context().newPage();
   await pub.goto(`/book/${code}`);
   await expect(pub.getByTestId("book-title")).toHaveText("Playwright Test Novel");
-  await expect(pub.getByTestId("viewer-position")).toHaveText("Page 1 of 3");
+  await expect(pub.getByTestId("viewer-position")).toHaveText("Page 1 of 4");
   const img = pub.getByTestId("viewer-slide").locator("img");
   await expect(img).toHaveAttribute("src", /^\/api\/uploads\/[0-9a-f-]{36}\.webp$/);
   const imgRes = await pub.request.get((await img.getAttribute("src"))!);

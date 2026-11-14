@@ -23,11 +23,14 @@ opens its page on a phone. Library staff sign in to add books, photograph previe
 with a phone camera, and mark books borrowed or returned in one click.
 
 The system is built with Next.js 16, TypeScript, PostgreSQL and Prisma, uses Auth.js for
-staff login, and is packaged for a university server with Docker. Security controls
+staff login, and runs online on **Vercel** with a Neon PostgreSQL database and private
+Vercel Blob photo storage (https://siam-library.vercel.app); a Docker setup remains for a
+university server. Security controls
 include server-side role checks, input validation with zod, login rate limiting, a
 nonce-based Content Security Policy and verified image uploads. Fifty-six automated
 end-to-end tests on desktop and mobile browsers cover search, reading, page turning,
-staff login and adding books; 53 pass and 3 are skipped by design.
+staff login and adding books; 53 pass and 3 are skipped by design, both locally and
+against the live site.
 
 ## 1. Introduction
 
@@ -84,19 +87,22 @@ flowchart LR
     S[Student phone / PC]
     T[Staff phone / PC]
   end
-  subgraph Server["University server (Docker)"]
+  subgraph Vercel["Vercel (serverless, iad1)"]
     P["Proxy<br/>CSP nonce, /admin redirect"]
     N["Next.js 16 app<br/>Server Components + Server Actions"]
-    U[("uploads volume<br/>WebP page photos")]
-    D[("PostgreSQL 17")]
   end
+  U[("Vercel Blob (private)<br/>WebP page photos")]
+  D[("Neon PostgreSQL<br/>pooled connection")]
   QR[[Printed QR sticker]] -. scan .-> S
   S -- HTTPS --> P
   T -- HTTPS --> P
   P --> N
   N -- Prisma --> D
-  N -- sharp --> U
+  N -- sharp, then store --> U
 ```
+
+The same code also runs on one server with Docker: there the database is a PostgreSQL
+container and photos are files in an `uploads` volume (chosen automatically, see §7).
 
 All pages are rendered on the server (React Server Components), so phones download little
 JavaScript. Interactivity — the page viewer, photo uploads and filter selects — is handled
@@ -181,7 +187,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  P[Phone photo] --> R["Browser: resize to ≤2000 px JPEG<br/>(also converts iPhone HEIC)"]
+  P[Phone photo] --> R["Browser: resize to ≤2000 px JPEG,<br/>shrink further until &lt; 4 MB on Vercel<br/>(also converts iPhone HEIC)"]
   R --> A["POST /api/admin/books/:id/pages<br/>one file per request"]
   A --> C1{Signed-in staff?<br/>same origin?}
   C1 -- no --> X1[401 / 403]
@@ -190,7 +196,7 @@ flowchart LR
   C2 -- yes --> C3{sharp decodes<br/>as an image?}
   C3 -- no --> X3[415]
   C3 -- yes --> W["Rotate, strip EXIF/GPS,<br/>fit 1600×2200, WebP q80"]
-  W --> F["Save as random UUID.webp<br/>outside /public"]
+  W --> F["Save as random UUID.webp<br/>private Blob store / folder outside /public"]
   F --> DB[(PreviewPage row)]
 ```
 
@@ -207,7 +213,8 @@ flowchart LR
 | Images | **sharp** | Fast decoding, verification, resizing and WebP encoding |
 | QR | **qrcode** | Generates SVG QR codes on the server — crisp when printed |
 | Testing | **Playwright** | Real-browser tests on desktop Chrome and an emulated Pixel 7 |
-| Deployment | **Docker**, **docker-compose** | Same app + database setup on any Linux server |
+| Hosting | **Vercel** (serverless Next.js), **Neon** PostgreSQL (Vercel Marketplace), **Vercel Blob** (private) | Free public HTTPS URL, no server to maintain; managed database and file storage that survive serverless restarts |
+| Self-hosting | **Docker**, **docker-compose** | Same app + database setup on any Linux server (alternative) |
 | Local DB | **embedded-postgres** | Real PostgreSQL on Windows without an installer or Docker |
 
 ## 6. Implementation
@@ -257,26 +264,72 @@ tests/             Playwright end-to-end tests
 | Large gaps in Thai paragraphs | Justification stretches the few spaces in Thai text | Justify English pages only |
 | Build failed with Cache Components | The template enabled it; every page reads a cookie and live loan status | Disabled — all pages are request-dependent |
 | Login lock-outs during testing | Successful logins counted towards the limit, and the IP limit was low | Count only failures; add a per-email limit that cannot be bypassed |
+| Rate limit would not hold on Vercel | Counters lived in memory, but each serverless instance has its own memory | Store counters in a `LoginThrottle` database table |
+| Photos would disappear on Vercel | Serverless functions have no lasting disk | `PhotoStorage` interface with a private Vercel Blob implementation |
+| Large phone photos could fail on Vercel | Vercel rejects request bodies over 4.5 MB | The browser compresses each photo below 4 MB before upload |
+| Prisma 7 has no `directUrl` | Neon needs a direct (unpooled) connection for migrations | `prisma.config.ts` uses `DATABASE_URL_UNPOOLED` for the CLI; the app uses the pooled URL |
+| Every photo returned 404 on the first live deploy | `.vercelignore` line `uploads/` also matched `src/app/api/uploads/`, so the image route was not uploaded | Root-anchored patterns (`/uploads/`); found with the live Playwright run and the `X-Matched-Path` header |
 
-## 7. Security
+## 7. Hosting and Deployment
+
+The live site is **https://siam-library.vercel.app**. It runs on Vercel's free plan:
+
+| Part | Service | Notes |
+|---|---|---|
+| Web app | Vercel serverless functions, region `iad1` (Washington D.C.) | Built from this repository with `next build`; `postinstall` runs `prisma generate` |
+| Database | Neon PostgreSQL (free), region `us-east-1` | Added through the Vercel Marketplace; next to `iad1`, so queries are fast |
+| Page photos | Vercel Blob, **private** store | Photos have no public URL; they are streamed by `/api/uploads/[file]` only after `canViewPreview()` allows it |
+| Secrets | Vercel environment variables | `AUTH_SECRET` (new random value, marked sensitive), database URLs, Blob token |
+
+**Why Vercel.** It gives a public HTTPS address immediately, needs no server
+administration, and builds Next.js natively. Its serverless model meant three changes:
+
+1. **No lasting disk.** Photos are stored through a small `PhotoStorage` interface
+   (`src/lib/storage.ts`) with two implementations, local disk and Vercel Blob, chosen
+   by whether `BLOB_READ_WRITE_TOKEN` is set. sharp still verifies and re-encodes
+   every photo before storage, and the access check still runs when photos are served.
+2. **Many short-lived instances.** The login rate limiter moved from memory to a
+   database table, so the limit holds whichever instance answers.
+3. **4.5 MB request limit.** The browser compresses photos below 4 MB before upload.
+
+**Database connections.** Serverless functions open many short connections, so the app
+uses Neon's **pooled** URL. Migrations need a **direct** connection; with Prisma 7 this is
+set in `prisma.config.ts` (`DATABASE_URL_UNPOOLED`), because `directUrl` no longer exists
+in `schema.prisma`. Migrations are applied from the developer PC with `prisma migrate
+deploy`, not during the build, because preview deployments share the same database.
+
+**Deployment steps.** `vercel link` → create the Neon database and private Blob store and
+connect both to the project → set `AUTH_SECRET`, `AUTH_TRUST_HOST`, `PREVIEW_ACCESS` and
+`NEXT_PUBLIC_SITE_URL` → `prisma migrate deploy` and the seed against Neon, with new random
+staff passwords → `vercel --prod`. `NEXT_PUBLIC_SITE_URL` is built into the app, so after
+the first deploy it was set to the real production URL and the site was deployed again;
+the QR codes now point to the live site.
+
+**Local development is unchanged**: `npm run db:start` + `npm run dev` use the embedded
+PostgreSQL and the `uploads/` folder, because neither Vercel variable is set locally. The
+Docker files remain for hosting on a university server.
+
+Full instructions: `docs/DEPLOYMENT.md`, section 3.
+
+## 8. Security
 
 | Threat | Control |
 |---|---|
 | Unauthorised admin access | Every admin page calls `requireStaff()`, every Server Action `assertStaff()`, the upload route `getStaffUser()`. These re-read the user from the database, so a deleted account loses access immediately. The proxy redirect is only a convenience. |
 | Privilege escalation | Deleting books requires the ADMIN role, checked on the server; the button is also hidden from STAFF. |
-| Password guessing | bcrypt (cost 12); 5 failures per email+IP and 10 per email (any IP) in 15 minutes, then a lock-out message; unknown emails take the same time as wrong passwords, so accounts cannot be discovered. |
+| Password guessing | bcrypt (cost 12); 5 failures per email+IP and 10 per email (any IP) in 15 minutes, then a lock-out message (counters stored in the database, so the limit holds across serverless instances); unknown emails take the same time as wrong passwords, so accounts cannot be discovered. |
 | Invalid / malicious input | zod schemas on every form, URL parameter and API input; bad search parameters are ignored, not errors. Prisma uses parameterised queries (no SQL injection). |
-| Malicious uploads | Only files that **sharp can decode** are accepted (MIME type and extension are not trusted); 10 MB and 10-page limits; images are re-encoded to WebP, which removes any embedded payload and EXIF/GPS data; random UUID file names; stored outside `public/`. |
+| Malicious uploads | Only files that **sharp can decode** are accepted (MIME type and extension are not trusted); 10 MB and 10-page limits; images are re-encoded to WebP, which removes any embedded payload and EXIF/GPS data; random UUID file names; stored outside `public/` (locally) or in a **private** Blob store (Vercel) with no public URL. |
 | Path traversal | The image route accepts only `<uuid>.webp` names (regex); anything else returns 404. |
 | Cross-site scripting | React escapes output; nonce-based **Content-Security-Policy** with `strict-dynamic` blocks injected scripts; the only raw HTML is QR SVG generated by the server from its own URL. |
 | Clickjacking, sniffing | `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`; HSTS when served over HTTPS. |
 | CSRF | Server Actions check the Origin header; session cookies are `SameSite=Lax`; the upload route also checks Origin. |
-| Secret leakage | Secrets only in `.env` (git-ignored) with a documented `.env.example`; the database is not exposed outside Docker. |
+| Secret leakage | Secrets only in `.env` / Vercel environment variables (git-ignored, and kept out of CLI uploads by `.vercelignore`) with a documented `.env.example`; the live site uses a new `AUTH_SECRET` and new random staff passwords, not the demo ones in the documentation. |
 | Future privacy needs | `PREVIEW_ACCESS` decides who can read previews in **one** function (`canViewPreview`), used by the book page, book cards and the image route. |
 
-## 8. Testing
+## 9. Testing
 
-### 8.1 Method
+### 9.1 Method
 Automated end-to-end tests with **Playwright** run in two browser profiles: *Desktop
 Chrome* and *Pixel 7* (mobile, touch). The tests use the seeded database and the running
 application, exactly as a user would. Tests that change data restore it (the borrow test
@@ -287,7 +340,7 @@ Manual checks were also made: screenshots at 390 px and 1360 px width, a product
 with `PREVIEW_ACCESS=students`, response headers, a browser session watching for CSP
 violations, and the QR sheet in print mode.
 
-### 8.2 Results
+### 9.2 Results
 
 **56 tests: 53 passed, 3 skipped by design, 0 failed** (two consecutive runs, about 55 s each).
 
@@ -306,10 +359,17 @@ violations while using search, viewer, language toggle, login and the QR sheet; 
 `PREVIEW_ACCESS=students` the book page shows the lock message and photos return 403;
 `/api/uploads/..%2F.env` returns 404.
 
+**Live site (Vercel):** the same 56 tests were run against https://siam-library.vercel.app
+with the live staff accounts: **53 passed, 3 skipped**. The first live run found one real
+deployment bug (photos returned 404, see §6.3), which was fixed and redeployed. The
+add-book test also uploads a noisy 3000×4000 photo (well over Vercel's 4.5 MB body limit)
+to show that browser-side compression lets it through. All test books and photos were
+deleted afterwards.
+
 **Not tested:** the Docker images (Docker was not available on the development PC), real
 phone hardware (only emulation), and printing on physical sticker paper.
 
-## 9. Future Work
+## 10. Future Work
 1. **Student sign-in** through the university's single sign-on, then switch
    `PREVIEW_ACCESS` to `students`.
 2. **Integrate with the library system (ILS)** so borrow/return status updates
@@ -318,12 +378,13 @@ phone hardware (only emulation), and printing on physical sticker paper.
 4. **Staff account management page** (today: a command-line script).
 5. **Audit log** of who changed what and when.
 6. **Barcode scanning** in the staff area to find a book by its existing library barcode.
-7. **Shared rate limiting** (Redis) if the app is scaled to several servers.
+7. **Custom domain** (e.g. `library.siam.edu`) for the Vercel site, then reprint QR codes.
 8. **Thai word segmentation** for better search ranking, and search suggestions.
 9. **Usage statistics**: most-previewed books, to guide purchasing.
-10. Test the Docker deployment on the university server and add continuous integration.
+10. Connect the GitHub repository to Vercel for automatic deploys and add continuous
+    integration that runs the tests on every change.
 
-## 10. Conclusion
+## 11. Conclusion
 The project delivers a working, bilingual Book Preview website for Siam University
 Library. Students can find a book, read its opening pages on their phone, and know
 whether and where to collect it before walking to the shelf. Staff can keep the catalogue,
@@ -331,7 +392,9 @@ page photos and loan status up to date from a phone in a few taps, and print QR 
 that connect the physical shelves to the website.
 
 The design keeps the system small and maintainable: server-rendered pages, one database,
-one upload folder, and security decisions placed in a few clearly named functions. The
-automated tests cover the main student and staff journeys on desktop and mobile. The main
-remaining steps before real use are testing the Docker deployment on the university
-server, replacing the demo accounts, and connecting student sign-in.
+one photo store, and security decisions placed in a few clearly named functions. The
+same code runs on a PC, on a Docker server, and on Vercel's serverless platform. The
+automated tests cover the main student and staff journeys on desktop and mobile. The site is
+live on Vercel with its own accounts and secrets. The main remaining steps before real
+use are testing on real phones and stickers, a university domain name, and connecting
+student sign-in.

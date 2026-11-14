@@ -39,23 +39,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ipKey = `login:ip:${ip}`;
         const ipAcctKey = `login:ipacct:${ip}:${email}`;
         const acctKey = `login:acct:${email}`;
-        if (
-          isLimited(ipAcctKey, LOGIN_MAX_PER_IP_ACCOUNT) ||
-          isLimited(acctKey, LOGIN_MAX_PER_ACCOUNT) ||
-          isLimited(ipKey, LOGIN_MAX_PER_IP)
-        ) {
-          throw new RateLimited();
-        }
+        const limited = await Promise.all([
+          isLimited(ipAcctKey, LOGIN_MAX_PER_IP_ACCOUNT),
+          isLimited(acctKey, LOGIN_MAX_PER_ACCOUNT),
+          isLimited(ipKey, LOGIN_MAX_PER_IP),
+        ]);
+        if (limited.some(Boolean)) throw new RateLimited();
 
         const user = await db.user.findUnique({ where: { email } });
         const valid = await bcrypt.compare(password, user?.passwordHash ?? (await getDummyHash()));
         if (!user || !valid) {
-          for (const k of [ipKey, ipAcctKey, acctKey]) recordFailure(k, LOGIN_WINDOW_MS);
+          await Promise.all([ipKey, ipAcctKey, acctKey].map((k) => recordFailure(k, LOGIN_WINDOW_MS)));
           return null;
         }
 
-        resetLimit(ipAcctKey);
-        resetLimit(acctKey);
+        await Promise.all([resetLimit(ipAcctKey), resetLimit(acctKey)]);
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),
