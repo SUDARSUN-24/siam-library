@@ -17,13 +17,14 @@
 - [x] `npm run build` passes, commit
 
 ## Phase 3 — Student pages
-- [ ] Layout, fonts (IBM Plex Sans Thai, Noto Serif Thai), colours
-- [ ] Generated book covers
-- [ ] Home: search (title, author, ISBN, contents), shelf cards, filters, book grid
-- [ ] Book page: cover, status + due date, location, details, page viewer
-- [ ] Viewer: prev/next, arrow keys, swipe, thumbnails, end page
-- [ ] Shelf page
-- [ ] `npm run build` passes, commit
+- [x] Layout, fonts (IBM Plex Sans Thai, Noto Serif Thai), colours
+- [x] Generated book covers
+- [x] Home: search (title, author, ISBN, contents), shelf cards, filters, book grid
+- [x] Book page: cover, status + due date, location, details, page viewer
+- [x] Viewer: prev/next, arrow keys, swipe, thumbnails, end page
+- [x] Shelf page
+- [x] Checked at 390 px and 1360 px (fixed mobile overflow, Thai letter-spacing and justification)
+- [x] `npm run build` passes, commit
 
 ## Phase 4 — Staff login and admin
 - [ ] Auth.js credentials login (bcrypt), JWT session with role

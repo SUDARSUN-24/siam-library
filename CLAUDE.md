@@ -75,12 +75,21 @@ docker compose up -d --build   # full stack on a server
 - Never log passwords or session tokens.
 
 ## Current status
-Phase 2 complete — Prisma schema + first migration, local UTF-8 PostgreSQL via
-embedded-postgres (port 5433), seed with 3 shelves / 18 books / 126 text pages / 2 users,
-Dockerfile + docker-compose.yml. Docker files are written but NOT tested on this machine
-(no Docker installed). Next: Phase 3 (student pages).
+Phase 3 complete — student pages: home (search + filters + shelf cards + grid),
+`/book/[code]` (cover, status, location, details, QR, page viewer), `/shelf/[code]`,
+`/api/uploads/[file]` image route. i18n (Thai default, `lang` cookie) built in from the start.
+Docker files are written but NOT tested on this machine (no Docker installed).
+Next: Phase 4 (staff login and admin).
 
 Notes:
 - Prisma 7: client is generated to `src/generated/prisma` (git-ignored); import from
   `@/generated/prisma/client`. Config lives in `prisma.config.ts` (seed command too).
-- Text page markup is documented at the top of `prisma/seed.ts`.
+- Text page markup is documented at the top of `prisma/seed.ts` and `src/components/page-text.tsx`.
+- `cacheComponents` / `partialPrefetching` are OFF in next.config.ts on purpose: every
+  page reads the language cookie and live loan status, so all routes render dynamically.
+- Thai typography: never use letter-spacing or `text-align: justify` on Thai. Use the
+  `eyebrow` and `prose-justify` utilities (globals.css) — they only apply to `:lang(en)`.
+- Grids that hold horizontally-scrolling children need `grid-cols-[minmax(0,1fr)]` /
+  `min-w-0`, or the page overflows on phones.
+- `NEXT_PUBLIC_SITE_URL` is read on the server only (QR codes), so it can be changed at
+  runtime without rebuilding.
