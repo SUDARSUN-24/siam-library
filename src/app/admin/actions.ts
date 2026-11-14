@@ -8,7 +8,8 @@ import { assertStaff } from "@/lib/auth-session";
 import { config } from "@/lib/config";
 import { db } from "@/lib/db";
 import { deletePagePhoto } from "@/lib/uploads";
-import { bookFormSchema } from "@/lib/validation";
+import { getDict } from "@/lib/i18n";
+import { bookFormErrors, bookFormSchema } from "@/lib/validation";
 import { Prisma } from "@/generated/prisma/client";
 
 const id = z.string().min(1).max(40);
@@ -50,14 +51,11 @@ export async function saveBook(_prev: BookFormState, formData: FormData): Promis
     [...formData.entries()].filter(([k]) => !k.startsWith("$")).map(([k, v]) => [k, String(v)]),
   );
   const parsed = bookFormSchema.safeParse(values);
-  if (!parsed.success) {
-    const errors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) errors[String(issue.path[0])] ??= issue.message;
-    return { errors, values };
-  }
+  const { t } = await getDict();
+  if (!parsed.success) return { errors: bookFormErrors(parsed.error.issues, values, t), values };
   const data = parsed.data;
   const shelf = await db.shelf.findUnique({ where: { id: data.shelfId }, select: { id: true } });
-  if (!shelf) return { errors: { shelfId: "Unknown shelf" }, values };
+  if (!shelf) return { errors: { shelfId: t.errUnknownShelf }, values };
 
   const bookId = values.bookId ? id.parse(values.bookId) : null;
   const record = {
@@ -86,7 +84,7 @@ export async function saveBook(_prev: BookFormState, formData: FormData): Promis
     }
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      return { errors: { code: "This book code is already used" }, values };
+      return { errors: { code: t.errCodeTaken }, values };
     }
     throw e;
   }

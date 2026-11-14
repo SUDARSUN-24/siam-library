@@ -147,6 +147,17 @@ const en = {
   qrShelves: "Shelves",
   qrWarnLocalhost: "NEXT_PUBLIC_SITE_URL is still a localhost address — phones will not be able to open these codes. Set it to the server's real address before printing.",
   forbidden: "You do not have permission to do that.",
+  // Book form validation (src/lib/validation.ts → bookFormErrors)
+  errRequired: "This field is required.",
+  errTooLong: "Too long — at most {max} characters.",
+  errCodeFormat: "Use a code like A-001 (shelf letter, dash, 3 digits).",
+  errCodeTaken: "This book code is already used.",
+  errIsbn: "ISBN must be 10 or 13 digits.",
+  errYear: "Enter a year between 1000 and 2100 (Western calendar, e.g. 2026).",
+  errRow: "Enter a whole number from 1 to 50.",
+  errChoice: "Choose one of the options.",
+  errUnknownShelf: "This shelf does not exist. Choose a shelf from the list.",
+  errInvalid: "This value is not valid.",
 };
 
 export type Dict = typeof en;
@@ -291,6 +302,16 @@ const th = {
   qrShelves: "ชั้นหนังสือ",
   qrWarnLocalhost: "NEXT_PUBLIC_SITE_URL ยังเป็น localhost โทรศัพท์จะเปิดคิวอาร์โค้ดไม่ได้ กรุณาตั้งค่าเป็นที่อยู่จริงของเซิร์ฟเวอร์ก่อนพิมพ์",
   forbidden: "คุณไม่มีสิทธิ์ทำรายการนี้",
+  errRequired: "กรุณากรอกข้อมูลช่องนี้",
+  errTooLong: "ยาวเกินไป — ไม่เกิน {max} ตัวอักษร",
+  errCodeFormat: "ใช้รหัสรูปแบบ A-001 (อักษรชั้นหนังสือ ขีด และตัวเลข 3 หลัก)",
+  errCodeTaken: "รหัสหนังสือนี้ถูกใช้แล้ว",
+  errIsbn: "ISBN ต้องมี 10 หรือ 13 หลัก",
+  errYear: "กรุณากรอกปี ค.ศ. ระหว่าง 1000 ถึง 2100 (เช่น 2026 ไม่ใช่ พ.ศ. 2569)",
+  errRow: "กรุณากรอกเลขจำนวนเต็มตั้งแต่ 1 ถึง 50",
+  errChoice: "กรุณาเลือกจากตัวเลือกที่มี",
+  errUnknownShelf: "ไม่พบชั้นหนังสือนี้ กรุณาเลือกชั้นจากรายการ",
+  errInvalid: "ข้อมูลนี้ไม่ถูกต้อง",
 } satisfies Dict;
 
 export const dictionaries: Record<Locale, Dict> = { en, th };

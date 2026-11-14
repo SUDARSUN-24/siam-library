@@ -135,3 +135,32 @@ test("QR sticker sheet lists every book and shelf", async ({ page }) => {
   await expect(page.getByTestId("qr-book")).toHaveCount(18);
   await expect(page.getByTestId("qr-book").first().locator("svg")).toBeVisible();
 });
+
+test("book form errors are shown in the UI language (Thai and English)", async ({ page, context, baseURL }) => {
+  await login(page, STAFF);
+  const submitInvalid = async () => {
+    await page.goto("/admin/books/new");
+    await page.locator("#code").fill("bad code");
+    await page.locator("#title").fill("Validation test");
+    await page.locator("#author").fill(""); // required, left empty
+    await page.locator("#category").fill("Novel");
+    await page.locator("#year").fill("2569"); // Buddhist-era year → out of range
+    await page.locator("#isbn").fill("123");
+    await page.getByTestId("save-book").click();
+  };
+
+  await context.addCookies([{ name: "lang", value: "th", url: baseURL! }]);
+  await submitInvalid();
+  await expect(page.getByText("ใช้รหัสรูปแบบ A-001", { exact: false })).toBeVisible();
+  await expect(page.getByText("กรุณากรอกข้อมูลช่องนี้")).toBeVisible();
+  await expect(page.getByText("ISBN ต้องมี 10 หรือ 13 หลัก")).toBeVisible();
+  await expect(page.getByText("กรุณากรอกปี ค.ศ.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Use a code like", { exact: false })).toHaveCount(0);
+
+  await context.addCookies([{ name: "lang", value: "en", url: baseURL! }]);
+  await submitInvalid();
+  await expect(page.getByText("Use a code like A-001", { exact: false })).toBeVisible();
+  await expect(page.getByText("This field is required.")).toBeVisible();
+  await expect(page.getByText("ISBN must be 10 or 13 digits.")).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/books\/new$/); // nothing was saved
+});

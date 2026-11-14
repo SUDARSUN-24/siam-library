@@ -11,7 +11,8 @@ import { loginAction, type LoginState } from "./actions";
 export function LoginForm({ t }: { t: Dict }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, {});
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate={false}>
+    // noValidate: invalid input gets the translated server message, not a browser-language bubble
+    <form action={action} className="flex flex-col gap-4" noValidate>
       {state.error && (
         <p role="alert" className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive" data-testid="login-error">
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

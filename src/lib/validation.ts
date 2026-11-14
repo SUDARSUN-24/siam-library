@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { fmt, type Dict } from "./dict";
 
 /** Book code: shelf letters + dash + 3 digits, e.g. "A-001". */
 export const bookCodeSchema = z
@@ -64,6 +65,42 @@ export const bookFormSchema = z.object({
   row: z.coerce.number().int().min(1).max(50),
 });
 export type BookFormInput = z.infer<typeof bookFormSchema>;
+
+/**
+ * Turn book-form zod issues into messages in the UI language (one per field).
+ * zod's own messages are English-only, so we map by field and issue type instead.
+ */
+export function bookFormErrors(
+  issues: z.core.$ZodIssue[],
+  values: Record<string, string>,
+  t: Dict,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const issue of issues) {
+    const field = String(issue.path[0]);
+    // An empty required field is always "required", whatever rule it failed.
+    errors[field] ??= values[field]?.trim() ? bookIssueMessage(field, issue, t) : t.errRequired;
+  }
+  return errors;
+}
+
+function bookIssueMessage(field: string, issue: z.core.$ZodIssue, t: Dict): string {
+  switch (field) {
+    case "code":
+      return t.errCodeFormat;
+    case "isbn":
+      return t.errIsbn;
+    case "year":
+      return t.errYear;
+    case "row":
+      return t.errRow;
+    case "language":
+    case "shelfId":
+      return t.errChoice;
+  }
+  if (issue.code === "too_big") return fmt(t.errTooLong, { max: Number(issue.maximum) });
+  return t.errInvalid;
+}
 
 /** Reorder preview pages: full list of page ids in the new order. */
 export const reorderSchema = z.object({

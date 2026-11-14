@@ -50,7 +50,9 @@ export function BookForm({ t, locale, shelves, categories, nextCodes, book }: Pr
   }, [state, t.adminSaved]);
 
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2" data-testid="book-form">
+    // noValidate: the browser's own "required"/range bubbles follow the BROWSER language, not the
+    // site's. The server returns translated messages (bookFormErrors), so the Thai UI shows Thai.
+    <form action={action} noValidate className="grid gap-4 sm:grid-cols-2" data-testid="book-form">
       {book?.id && <input type="hidden" name="bookId" value={book.id} />}
 
       <Field label={t.fieldShelf} error={err("shelfId")} htmlFor="shelfId">
