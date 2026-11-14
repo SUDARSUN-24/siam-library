@@ -27,12 +27,15 @@
 - [x] `npm run build` passes, commit
 
 ## Phase 4 — Staff login and admin
-- [ ] Auth.js credentials login (bcrypt), JWT session with role
-- [ ] Server-side role checks on every admin page and action
-- [ ] Books list with one-click borrowed / returned (+14 days)
-- [ ] Add / edit book form (zod)
-- [ ] Preview photo upload (phone camera), reorder, delete; WebP compression
-- [ ] `npm run build` passes, commit
+- [x] Auth.js credentials login (bcrypt), JWT session with role
+- [x] Server-side role checks on every admin page and action (user re-read from DB)
+- [x] Books list with one-click borrowed / returned (+14 days)
+- [x] Add / edit book form (zod), next free code suggested per shelf
+- [x] Preview photo upload (phone camera or gallery), reorder, delete; WebP compression
+- [x] Delete book — ADMIN role only
+- [x] Login rate limit (done here, inside `authorize()`)
+- [x] Checked in a headless browser: wrong password, login, toggle, add book, upload, fake image rejected
+- [x] `npm run build` passes, commit
 
 ## Phase 5 — QR codes, Thai/English, security, mobile polish
 - [ ] QR code on book page; printable sticker sheet for books and shelves
