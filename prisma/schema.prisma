@@ -1,0 +1,87 @@
+// Siam University Library — Book Preview
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookStatus {
+  AVAILABLE
+  BORROWED
+}
+
+enum PageType {
+  IMAGE
+  TEXT
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+/// A physical shelf in the library (A, B, C ...). More can be added later.
+model Shelf {
+  id        String   @id @default(cuid())
+  code      String   @unique // "A"
+  nameEn    String
+  nameTh    String
+  color     String // hex colour, e.g. "#1f4e79"
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id        String        @id @default(cuid())
+  code      String        @unique // "A-001" — used in URLs and QR codes
+  title     String
+  altTitle  String? // title in the other language
+  author    String
+  category  String
+  language  String // "th" | "en"
+  year      Int?
+  publisher String?
+  isbn      String?
+  shelfId   String
+  shelf     Shelf         @relation(fields: [shelfId], references: [id])
+  row       Int
+  status    BookStatus    @default(AVAILABLE)
+  dueDate   DateTime?
+  pages     PreviewPage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([shelfId])
+  @@index([status])
+  @@index([category])
+}
+
+/// One page of the preview: a staff photo (IMAGE) or typed text (TEXT).
+model PreviewPage {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  order     Int
+  type      PageType
+  imagePath String? // file name inside UPLOAD_DIR (random UUID .webp)
+  text      String?
+  createdAt DateTime @default(now())
+
+  @@index([bookId, order])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STAFF)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

@@ -75,5 +75,12 @@ docker compose up -d --build   # full stack on a server
 - Never log passwords or session tokens.
 
 ## Current status
-Phase 1 complete — project scaffolded (Next 16, Tailwind 4, shadcn/ui, all dependencies
-installed), CLAUDE.md and docs outlines written. Next: Phase 2 (database, Docker, seed).
+Phase 2 complete — Prisma schema + first migration, local UTF-8 PostgreSQL via
+embedded-postgres (port 5433), seed with 3 shelves / 18 books / 126 text pages / 2 users,
+Dockerfile + docker-compose.yml. Docker files are written but NOT tested on this machine
+(no Docker installed). Next: Phase 3 (student pages).
+
+Notes:
+- Prisma 7: client is generated to `src/generated/prisma` (git-ignored); import from
+  `@/generated/prisma/client`. Config lives in `prisma.config.ts` (seed command too).
+- Text page markup is documented at the top of `prisma/seed.ts`.
