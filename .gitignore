@@ -32,6 +32,15 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local database, uploads, generated client, test output
+/.pgdata/
+/uploads/
+/src/generated/
+/test-results/
+/playwright-report/
+/playwright/.cache/
 
 # vercel
 .vercel
