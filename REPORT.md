@@ -28,10 +28,10 @@ Vercel Blob photo storage (https://siam-library.vercel.app); a Docker setup rema
 university server. Security controls
 include server-side role checks, a staff area hidden behind a secret path, two-step login
 (authenticator-app codes, required for the admin), input validation with zod, login rate
-limiting, a nonce-based Content Security Policy and verified image uploads. Fifty-six automated
+limiting, a nonce-based Content Security Policy and verified image uploads. Seventy automated
 end-to-end tests on desktop and mobile browsers cover search, reading, page turning,
-staff login and adding books; 53 pass and 3 are skipped by design, both locally and
-against the live site.
+staff login, two-step login, the hidden staff area and adding books; locally 66 pass and
+4 are skipped by design, and against the live site 65 pass and 5 are skipped.
 
 ## 1. Introduction
 
@@ -357,7 +357,8 @@ violations, and the QR sheet in print mode.
 
 ### 9.2 Results
 
-**58 tests: 55 passed, 3 skipped by design, 0 failed** (repeatable; about 1 minute locally, 2 minutes against the live site).
+**70 tests: 66 passed, 4 skipped by design, 0 failed** locally (run twice in a row — repeatable, including the rate limits; about 2 minutes).
+Against the live site: **65 passed, 5 skipped, 0 failed**.
 
 | Area | Tests | What is checked |
 |---|---|---|
@@ -368,16 +369,20 @@ violations, and the QR sheet in print mode.
 | Hidden staff area (4) | `/admin`, `/admin/login` (also `/Admin`, `/%61dmin`) are 404; home, book, shelf, 404 page, `robots.txt`, `sitemap.xml` never contain the secret path or an `/admin` link; Auth.js sign-in/error redirects do not reveal it; staff pages are `noindex` (header + meta) | secret path stays secret |
 | Two-step login (2) | admin cannot reach the books list with a password only (code required, wrong code refused — or, if not set up yet, every staff page redirects to the setup page and the upload API returns 401); **staff turns 2FA on (QR + key, wrong first code refused, 8 backup codes) → password alone is not enough → wrong code refused → right code works → backup code works once → 5 wrong codes lock the code step (even a right code is then refused) → turns it off** | full 2FA lifecycle, replay and rate limit |
 
-Skipped by design: swipe and phone-width tests on desktop; the add-book test on mobile
-(it creates and deletes data, so it runs once).
+Skipped by design: swipe and phone-width tests on desktop; the add-book test and the
+staff two-step-login test on mobile (they change shared data, so they run once, on desktop).
+On the live site the add-book test is also skipped: it needs a fully signed-in **admin**, and
+the live admin's authenticator is on the owner's phone (the test cannot read it).
 
 **Manual verification (production build):** all security headers present; no CSP
 violations while using search, viewer, language toggle, login and the QR sheet; with
 `PREVIEW_ACCESS=students` the book page shows the lock message and photos return 403;
 `/api/uploads/..%2F.env` returns 404.
 
-**Live site (Vercel):** the same 58 tests were run against https://siam-library.vercel.app
-(Singapore) with the live staff accounts: **55 passed, 3 skipped**. The first live run found one real
+**Live site (Vercel):** the same 70 tests were run against https://siam-library.vercel.app
+(Singapore) with the live staff accounts and the live secret path: **65 passed, 5 skipped**
+(2026-11-15, after the secret path and two-step login were deployed). Earlier, before those
+features, 58 tests gave 55 passed, 3 skipped. The first live run found one real
 deployment bug (photos returned 404, see §6.3), which was fixed and redeployed. The
 add-book test also uploads a noisy 3000×4000 photo (well over Vercel's 4.5 MB body limit)
 to show that browser-side compression lets it through. All test books and photos were

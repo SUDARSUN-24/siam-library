@@ -48,7 +48,8 @@ export async function freshCode(secret: string) {
   }
 }
 
-export const codeField = (page: Page) => page.getByLabel(/^(6-digit code|รหัส 6 หลัก)$/);
+/** The code box of the LOGIN form (the 2FA setup page has its own "6-digit code" box). */
+export const codeField = (page: Page) => page.locator("input#code");
 
 /** Email + password on the staff login page (step 1 only). */
 export async function submitPassword(page: Page, who: Account) {

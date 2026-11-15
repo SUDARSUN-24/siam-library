@@ -110,6 +110,10 @@ Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PA
 
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel** (details and test results: docs/PLAN.md).
+- 2026-11-15: secret staff path (`ADMIN_PATH`, own value in Vercel Production and Preview) +
+  two-step login (TOTP) live. Playwright 70 tests: local 66 passed / 4 skipped; live 65 / 5
+  (the add-book test needs the live admin's phone, so it skips there).
+- Live admin has NOT set up 2FA yet (owner does it on their phone); live passwords were reset.
 
 Known gaps / not verified:
 - Docker images were never built or run (Docker not installed on the dev PC).
