@@ -68,7 +68,7 @@ This is how the live site https://siam-library.vercel.app runs.
 
 | Piece | Service | Notes |
 |---|---|---|
-| App | Vercel (Next.js, serverless functions in `sin1` / Singapore — `vercel.json` `regions`) | Project `siam-library`; build = `next build`, `postinstall` runs `prisma generate` |
+| App | Vercel (Next.js, serverless functions in `sin1` / Singapore — `vercel.json` `regions`) | Project `siam-library`; build = `scripts/vercel-build.mjs` (Production: `prisma migrate deploy` then `next build`), `postinstall` runs `prisma generate` |
 | Source | GitHub `SUDARSUN-24/siam-library`, connected to the Vercel project | Push to `main` → production deploy; any other branch → preview deploy |
 | Database | **Neon** project `siam-library-db-sg` (free plan, `ap-southeast-1` / Singapore), added through the Vercel Marketplace | Branch `main` = production. Same region as `sin1`, so each query is fast |
 | Preview database | Neon branch **`preview`** (child of `main`) | Its URLs are set for the Vercel **Preview** environment only |
@@ -176,11 +176,17 @@ Remove-Item Env:DATABASE_URL                  # back to the local database
 ```
 Two-step login settings are kept when a password changes.
 
-Migrations are **not** run during the Vercel build, so a deploy never changes a database
-by itself. After a schema change: `npm run db:deploy` against the production database
-(and the `preview` branch) first, then push. Example: migration `*_catalogue_search` creates
-the `pg_trgm` extension (available on Neon) and the search indexes — the search code fails
-without it, so it must be on the database before that code is deployed.
+**Production builds apply migrations automatically.** `vercel.json` sets the build command
+to `node scripts/vercel-build.mjs`: when `VERCEL_ENV=production` it runs
+`prisma migrate deploy` (direct Neon URL, `DATABASE_URL_UNPOOLED`) and then `next build`.
+A failed migration fails the build, so code never goes live without its schema. Because the
+migration runs before the new code is live (and stays if `next build` then fails), every
+migration must be **backward-compatible** with the code already running: add columns /
+tables / indexes first, remove old ones in a later deploy.
+Preview deployments do **not** migrate: after a schema change run `npm run db:deploy`
+against the `preview` branch yourself (load its direct URL into `DATABASE_URL_UNPOOLED`).
+Example: migration `*_catalogue_search` creates the `pg_trgm` extension (available on Neon)
+and the search indexes — the search code fails without it.
 
 `npm run seed:bulk` (fake books for load tests) is for the LOCAL database only: it refuses to
 run when `DATABASE_URL` is not localhost, `DATABASE_URL_UNPOOLED` is set, on Vercel, or with

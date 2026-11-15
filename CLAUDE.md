@@ -39,6 +39,7 @@ npm run user:create -- <email> <name> <ADMIN|STAFF>
 npm run user:reset-2fa -- <email>   # lost phone: turns two-step login off for that account
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
 git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
+                               # production builds run `prisma migrate deploy` first (scripts/vercel-build.mjs)
 ```
 Live-site operations (logs, env pull, migrating the live DB, E2E against live, Neon CLI): the
 `live-ops` skill. `vercel env pull` only ever to a file OUTSIDE the repo — never into `.env.local`.
@@ -78,6 +79,10 @@ The live site uses the same emails with different random passwords — never wri
 - Prisma 7 `migrate dev` does NOT regenerate the client — run `npx prisma generate` after it.
 - Nothing may depend on local disk or long-running processes (Vercel is serverless):
   photos go through `storage` (src/lib/storage.ts), shared state goes in the database.
+- Migrations: Vercel PRODUCTION builds apply them automatically (scripts/vercel-build.mjs,
+  set in vercel.json) before `next build` — so every migration must be backward-compatible
+  with the code still running. Preview deploys don't migrate: `npm run db:deploy` on the
+  Neon `preview` branch by hand.
 - Prisma 7 has no `directUrl`: the CLI uses `DATABASE_URL_UNPOOLED ?? DATABASE_URL`
   (prisma.config.ts); the app uses the pooled `DATABASE_URL` (src/lib/db.ts).
 
@@ -118,8 +123,7 @@ The live site uses the same emails with different random passwords — never wri
 (details and test results: docs/PLAN.md).
 - 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
   search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
-  Migration `*_catalogue_search` (pg_trgm + indexes) must be applied to Neon (preview + main)
-  BEFORE deploying code that uses it.
+  Migration `*_catalogue_search` (pg_trgm + indexes) applied to Neon preview + main.
 - 2026-11-15: two-step login (TOTP) live. Staff area at the fixed `/admin` (login
   `/admin/login`, linked from the public footer). The secret-path experiment (`ADMIN_PATH`)
   was removed again. Playwright 66 tests locally: 62 passed / 4 skipped.
