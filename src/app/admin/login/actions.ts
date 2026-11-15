@@ -2,7 +2,6 @@
 
 import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn } from "@/auth";
-import { staffHref } from "@/lib/admin-path";
 import { loginSchema } from "@/lib/validation";
 
 export type LoginState = {
@@ -28,7 +27,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   // string "undefined" (and count as a wrong code). Only include `code` when there is one.
   const { code, ...rest } = parsed.data;
   try {
-    await signIn("credentials", { ...rest, ...(code ? { code } : {}), redirectTo: staffHref() });
+    await signIn("credentials", { ...rest, ...(code ? { code } : {}), redirectTo: "/admin" });
     return {};
   } catch (err) {
     // signIn throws a redirect on success — let Next.js handle it.

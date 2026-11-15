@@ -4,7 +4,6 @@ import QRCode from "qrcode";
 import { ArrowLeft, LogOut, ShieldAlert, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { LanguageToggle, LibraryMark } from "@/components/site-header";
-import { staffHref } from "@/lib/admin-path";
 import { requireStaffForSecurity, TWO_FACTOR_REQUIRED_ROLES } from "@/lib/auth-session";
 import { fmt } from "@/lib/dict";
 import { getDict } from "@/lib/i18n";
@@ -45,7 +44,7 @@ export default async function SecurityPage() {
             <span className="font-serif text-[15px] font-semibold">{t.navStaff}</span>
           </span>
         ) : (
-          <Link href={staffHref()} prefetch={false} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+          <Link href={"/admin"} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t.adminBooks}
           </Link>
@@ -71,9 +70,9 @@ export default async function SecurityPage() {
         </p>
 
         {setup ? (
-          <SetupTwoFactor t={t} qrSvg={setup.qr} secret={setup.secret} continueHref={staffHref()} />
+          <SetupTwoFactor t={t} qrSvg={setup.qr} secret={setup.secret} continueHref={"/admin"} />
         ) : (
-          <ManageTwoFactor t={t} canDisable={!required} continueHref={staffHref()} />
+          <ManageTwoFactor t={t} canDisable={!required} continueHref={"/admin"} />
         )}
       </div>
     </main>

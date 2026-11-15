@@ -1,37 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { adminBase } from "@/lib/admin-path";
 
 /**
  * Runs before every page request:
- *  1. Staff area: the internal route /admin/* is only reachable through the secret
- *     ADMIN_PATH (src/lib/admin-path.ts) — ADMIN_PATH/* is rewritten to /admin/*, and a
- *     direct request for /admin/* gets the normal 404 page.
- *  2. Optimistic staff check: no session cookie → redirect to ADMIN_PATH/login.
+ *  1. Content-Security-Policy with a fresh nonce (Next.js adds it to its own scripts).
+ *  2. Optimistic admin check: no session cookie → redirect to /admin/login.
  *     This is NOT the security boundary — every admin page, Server Action and route
  *     handler checks the session and role on the server (src/lib/auth-session.ts).
- *  3. Content-Security-Policy with a fresh nonce (Next.js adds it to its own scripts).
+ *  3. Staff pages get X-Robots-Tag: noindex (on top of the robots meta tag) and no-store.
  * Other security headers (X-Frame-Options, nosniff, ...) are set in next.config.ts.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  let decoded = pathname;
-  try {
-    decoded = decodeURIComponent(pathname);
-  } catch {}
+  const staffPage = pathname === "/admin" || pathname.startsWith("/admin/");
 
-  let rewriteTo: URL | null = null;
-  let staffPage = false;
-  const base = adminBase();
-  if (/^\/admin(\/|$)/i.test(decoded)) {
-    // Hide the internal route: same 404 as any unknown URL.
-    rewriteTo = new URL("/__404", request.url); // matches no route → root not-found.tsx, status 404
-  } else if (base && (pathname === base || pathname.startsWith(`${base}/`))) {
-    const rest = pathname.slice(base.length).replace(/\/+$/, "");
+  if (staffPage && pathname !== "/admin/login") {
     const hasSession =
       request.cookies.has("authjs.session-token") || request.cookies.has("__Secure-authjs.session-token");
-    if (rest !== "/login" && !hasSession) return noindex(NextResponse.redirect(new URL(`${base}/login`, request.url)));
-    rewriteTo = new URL(`/admin${rest}${request.nextUrl.search}`, request.url);
-    staffPage = true;
+    if (!hasSession) return noindex(NextResponse.redirect(new URL("/admin/login", request.url)));
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -56,8 +41,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 
-  const init = { request: { headers: requestHeaders } };
-  const response = rewriteTo ? NextResponse.rewrite(rewriteTo, init) : NextResponse.next(init);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   return staffPage ? noindex(response) : response;
 }

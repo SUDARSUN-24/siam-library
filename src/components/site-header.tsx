@@ -62,7 +62,9 @@ export function SiteFooter({ t }: { t: Dict }) {
         <p>
           © {new Date().getFullYear()} {t.siteName}
         </p>
-        {/* No link to the staff area on public pages: staff open the secret ADMIN_PATH bookmark. */}
+        <Link href="/admin/login" className="hover:text-foreground" data-testid="staff-login-link">
+          {t.staffLogin}
+        </Link>
       </div>
     </footer>
   );

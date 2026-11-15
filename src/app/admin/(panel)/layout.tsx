@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { staffHref } from "@/lib/admin-path";
 import { BookPlus, Library, LogOut, QrCode, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { LanguageToggle, LibraryMark } from "@/components/site-header";
@@ -15,17 +14,17 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const { locale, t } = await getDict();
 
   const nav = [
-    { href: staffHref(), label: t.adminBooks, icon: Library },
-    { href: staffHref("/books/new"), label: t.adminAddBook, icon: BookPlus },
-    { href: staffHref("/qr"), label: t.adminQr, icon: QrCode },
-    { href: staffHref("/security"), label: t.twoFactorNav, icon: ShieldCheck },
+    { href: "/admin", label: t.adminBooks, icon: Library },
+    { href: "/admin/books/new", label: t.adminAddBook, icon: BookPlus },
+    { href: "/admin/qr", label: t.adminQr, icon: QrCode },
+    { href: "/admin/security", label: t.twoFactorNav, icon: ShieldCheck },
   ];
 
   return (
     <>
       <header className="no-print sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <Link href={staffHref()} prefetch={false} className="flex items-center gap-2">
+          <Link href={"/admin"} className="flex items-center gap-2">
             <LibraryMark className="size-7" />
             <span className="font-serif text-[15px] font-semibold">{t.navStaff}</span>
           </Link>
@@ -50,7 +49,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <Link
               key={href}
               href={href}
-              prefetch={false}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <Icon className="size-4" aria-hidden="true" />

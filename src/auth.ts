@@ -32,9 +32,7 @@ const getDummyHash = () => (dummyHash ??= bcrypt.hash("no-such-user-password", 1
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 }, // one working day
-  // Auth.js redirects GET /api/auth/signin (and errors) to these pages. They point to the
-  // home page on purpose: pointing them at the staff login would reveal the secret ADMIN_PATH.
-  pages: { signIn: "/", error: "/" },
+  pages: { signIn: "/admin/login" },
   trustHost: true,
   providers: [
     Credentials({

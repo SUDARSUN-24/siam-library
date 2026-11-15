@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { signOut } from "@/auth";
-import { staffHref } from "@/lib/admin-path";
 import { assertStaff } from "@/lib/auth-session";
 import { config } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -91,7 +90,7 @@ export async function saveBook(_prev: BookFormState, formData: FormData): Promis
   }
   revalidateBook(data.code);
   revalidatePath(`/admin/books/${savedId}`);
-  if (!bookId) redirect(staffHref(`/books/${savedId}?created=1`));
+  if (!bookId) redirect(`/admin/books/${savedId}?created=1`);
   return { ok: true, values };
 }
 
@@ -103,7 +102,7 @@ export async function deleteBook(formData: FormData) {
   await db.book.delete({ where: { id: bookId } });
   await Promise.all(book.pages.map((p) => deletePagePhoto(p.imagePath)));
   revalidateBook(book.code);
-  redirect(staffHref());
+  redirect("/admin");
 }
 
 /** Delete one preview page (and its photo), then renumber the rest. */
@@ -140,5 +139,5 @@ async function renumber(bookId: string) {
 }
 
 export async function signOutAction() {
-  await signOut({ redirectTo: "/" });
+  await signOut({ redirectTo: "/admin/login" });
 }

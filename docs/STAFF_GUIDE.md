@@ -6,10 +6,8 @@ Simple steps for library staff. Works on a computer or a phone.
 ---
 
 ## 1. Log in · เข้าสู่ระบบ
-1. Open the **secret staff link** that IT gave you and **bookmark it**. The public site
-   has no staff link, and `/admin` does not exist (it shows “page not found”).
-   Do not share the link or post it anywhere. If you lose it, ask IT.
-   เปิด **ลิงก์ลับสำหรับเจ้าหน้าที่** ที่ได้รับจากฝ่ายไอทีแล้วบันทึกเป็นบุ๊กมาร์ก ห้ามเผยแพร่ลิงก์นี้
+1. Open the website and tap **Staff login / เข้าสู่ระบบเจ้าหน้าที่** at the bottom of any
+   page (or go straight to `/admin/login`).
 2. Enter your email and password, then **Sign in / เข้าสู่ระบบ**.
 3. If two-step login is on (always for **Admin**), enter the **6-digit code** from the
    authenticator app on your phone, then **Verify / ยืนยัน**. See section 7.

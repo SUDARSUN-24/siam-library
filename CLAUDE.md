@@ -45,9 +45,8 @@ Commits must be authored by the GitHub account that owns the Vercel project (SUD
 or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.
 Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
 Local admin also needs a code: seed sets its 2FA secret from `SEED_ADMIN_TOTP_SECRET` (.env, local only).
-The live site uses the same emails with different random passwords and its own `ADMIN_PATH`
-— never write those (or any 2FA secret) into a file.
-Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PATH`.
+The live site uses the same emails with different random passwords — never write those
+(or any 2FA secret) into a file.
 
 ## Coding rules
 - Next 16: `params` / `searchParams` are Promises — always `await` them. Middleware is `src/proxy.ts`.
@@ -79,13 +78,10 @@ Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PA
 - Every admin page calls `requireStaff()` / `requireAdmin()`; every Server Action calls
   `assertStaff()` (ADMIN-only actions: `assertStaff("ADMIN")`); route handlers use
   `getStaffUser()`. These re-read the user from the DB. The proxy redirect is NOT security.
-- **Secret staff path**: the staff area is served ONLY at `ADMIN_PATH` (env, src/lib/admin-path.ts);
-  src/proxy.ts rewrites `ADMIN_PATH/*` → internal `/admin/*` and returns 404 for `/admin/*`.
-  Staff links/redirects use `staffHref()` (+ `prefetch={false}` on `<Link>`: prefetches skip
-  the proxy). Never put the path in public pages, robots/sitemap, client bundles, tests or
-  any committed file; never point Auth.js `pages` at it. `revalidatePath` still uses `/admin/...`.
+- Staff pages are noindex: robots meta tag in the admin layouts + `X-Robots-Tag` and
+  `Cache-Control: no-store` from src/proxy.ts for every `/admin/*` response.
 - **Two-step login (TOTP)** is required for ADMIN (`TWO_FACTOR_REQUIRED_ROLES`): until it is
-  on, `getStaffUser`/`assertStaff` refuse and `requireStaff` redirects to `ADMIN_PATH/security`
+  on, `getStaffUser`/`assertStaff` refuse and `requireStaff` redirects to `/admin/security`
   (the only page allowed, via `requireStaffForSecurity`). Code check + its rate limit live in
   src/lib/two-factor.ts, called from `authorize()` after the password. TOTP secrets are
   encrypted with a key from `AUTH_SECRET` (src/lib/totp.ts).
@@ -112,10 +108,12 @@ Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PA
 
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel** (details and test results: docs/PLAN.md).
-- 2026-11-15: secret staff path (`ADMIN_PATH`, own value in Vercel Production and Preview) +
-  two-step login (TOTP) live. Playwright 70 tests: local 66 passed / 4 skipped; live 65 / 5
-  (the add-book test needs the live admin's phone, so it skips there).
-- Live admin has NOT set up 2FA yet (owner does it on their phone); live passwords were reset.
+- 2026-11-15: two-step login (TOTP) live. Staff area at the fixed `/admin` (login
+  `/admin/login`, linked from the public footer). The secret-path experiment (`ADMIN_PATH`)
+  was removed again. Playwright 66 tests locally: 62 passed / 4 skipped.
+- Last full live Playwright run was before `/admin` came back (65/5 of 70); it needs the
+  live passwords (owner only). The add-book test skips on live until the admin's 2FA
+  secret is available (it is on the owner's phone).
 
 Known gaps / not verified:
 - Docker images were never built or run (Docker not installed on the dev PC).

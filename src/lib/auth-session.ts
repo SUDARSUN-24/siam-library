@@ -1,7 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { staffHref } from "./admin-path";
 import { db } from "./db";
 
 /** Current visitor's session (null for anonymous students). */
@@ -46,15 +45,15 @@ export async function getStaffUser(): Promise<StaffUser | null> {
 /** For admin pages: redirect to login when not signed in, to 2FA setup when it is required. */
 export async function requireStaff(): Promise<StaffUser> {
   const user = await loadStaff();
-  if (!user) redirect(staffHref("/login"));
-  if (user.needsTwoFactorSetup) redirect(staffHref("/security"));
+  if (!user) redirect("/admin/login");
+  if (user.needsTwoFactorSetup) redirect("/admin/security");
   return strip(user);
 }
 
 /** For admin-only pages: staff accounts are sent back to the books list. */
 export async function requireAdmin(): Promise<StaffUser> {
   const user = await requireStaff();
-  if (user.role !== "ADMIN") redirect(staffHref());
+  if (user.role !== "ADMIN") redirect("/admin");
   return user;
 }
 
@@ -64,7 +63,7 @@ export async function requireAdmin(): Promise<StaffUser> {
  */
 export async function requireStaffForSecurity(): Promise<LoadedStaff> {
   const user = await loadStaff();
-  if (!user) redirect(staffHref("/login"));
+  if (!user) redirect("/admin/login");
   return user;
 }
 

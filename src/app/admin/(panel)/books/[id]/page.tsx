@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { staffHref } from "@/lib/admin-path";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ExternalLink, Trash2 } from "lucide-react";
 import { deleteBook, toggleBookStatus } from "@/app/admin/actions";
@@ -38,7 +37,7 @@ export default async function EditBookPage({ params, searchParams }: PageProps<"
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <Link href={staffHref()} prefetch={false} className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+      <Link href={"/admin"} className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
         <ArrowLeft className="size-4" aria-hidden="true" />
         {t.adminBooks}
       </Link>

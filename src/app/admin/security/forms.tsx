@@ -53,7 +53,7 @@ function BackupCodes({ t, codes, done, continueHref }: { t: Dict; codes: string[
       </ul>
       <p className="text-xs text-muted-foreground">{t.twoFactorBackupWarn}</p>
       <Button asChild className="mt-2 h-11" data-testid="twofa-continue">
-        <Link href={continueHref} prefetch={false}>
+        <Link href={continueHref}>
           {t.twoFactorContinue}
         </Link>
       </Button>

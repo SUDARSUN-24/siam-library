@@ -1,17 +1,8 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { currentStep, totpCode } from "../src/lib/totp";
 
-const live = Boolean(process.env.E2E_BASE_URL);
-
-/**
- * Secret staff path (ADMIN_PATH). Local runs read it from .env (loaded by playwright.config.ts);
- * against a deployed site pass E2E_ADMIN_PATH (the local .env value would be wrong there).
- */
-export const ADMIN_PATH = (live ? process.env.E2E_ADMIN_PATH : (process.env.E2E_ADMIN_PATH ?? process.env.ADMIN_PATH))?.trim().replace(/\/+$/, "");
-if (!ADMIN_PATH) throw new Error(live ? "Set E2E_ADMIN_PATH to the site's secret ADMIN_PATH." : "Set ADMIN_PATH in .env (see .env.example).");
-
-/** URL of a staff page: staff("/qr") → "/staff-xxxx/qr". */
-export const staff = (sub = "") => `${ADMIN_PATH}${sub}`;
+/** URL of a staff page: staff("/qr") → "/admin/qr". */
+export const staff = (sub = "") => `/admin${sub}`;
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** Regex for toHaveURL: whole staff path, optional query. */
 export const staffUrl = (sub = "") => new RegExp(`${esc(staff(sub))}(\\?.*)?$`);

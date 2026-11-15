@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { config as loadEnv } from "dotenv";
 
-// Local runs: ADMIN_PATH, SEED_* and SEED_ADMIN_TOTP_SECRET come from .env (as for the app).
+// Local runs: SEED_* and SEED_ADMIN_TOTP_SECRET come from .env (as for the app).
 // A deployed site (E2E_BASE_URL) uses only what is set in the shell — see DEPLOYMENT.md.
 if (!process.env.E2E_BASE_URL) loadEnv({ path: ".env", quiet: true });
 
