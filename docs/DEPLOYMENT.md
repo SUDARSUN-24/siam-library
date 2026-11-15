@@ -165,6 +165,21 @@ Re-running the seed **replaces the 18 demo books** (and their loan status) — d
 once staff have started editing real data. To add or reset a staff account on the live site,
 load the variables the same way and run `npm run user:create -- <email> <name> <ADMIN|STAFF>`.
 
+#### Change a live password (run it yourself, in PowerShell)
+`user:create` asks for the new password twice with **hidden input** (nothing is shown while
+you type, min 12 characters). It refuses piped input and never prints the password.
+```powershell
+cd C:\Projects\siam-library
+vercel env pull $env:TEMP\siam-prod.env --environment production --yes
+Get-Content $env:TEMP\siam-prod.env | ForEach-Object {
+  if ($_ -match '^DATABASE_URL="(.*)"$') { $env:DATABASE_URL = $Matches[1] } }
+Remove-Item $env:TEMP\siam-prod.env           # it contains the database password
+npm run user:create -- admin@library.siam.edu "Library Admin" ADMIN
+npm run user:create -- staff@library.siam.edu "Library Staff" STAFF
+Remove-Item Env:DATABASE_URL                  # back to the local database
+```
+Two-step login settings are kept when a password changes.
+
 Migrations are **not** run during the Vercel build, so a deploy never changes a database
 by itself. After a schema change: `npm run db:deploy` against the production database
 (and the `preview` branch) first, then push.
@@ -233,7 +248,7 @@ Load demo data (optional — skip for a real catalogue):
 docker compose exec app npm run db:seed
 ```
 
-Create real staff accounts (asks for the password interactively):
+Create real staff accounts (asks for the password twice, hidden; needs an interactive terminal):
 ```bash
 docker compose exec app npm run user:create -- librarian@siam.edu "Khun Somsri" STAFF
 docker compose exec app npm run user:create -- it-admin@siam.edu "IT Admin" ADMIN

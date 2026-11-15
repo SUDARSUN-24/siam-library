@@ -106,7 +106,9 @@ Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PA
 - Who may read previews is decided in ONE place: `canViewPreview()` in `src/lib/access.ts`
   (`PREVIEW_ACCESS` = `public` now; `students` later). Anything showing page text or
   photos — including book cards — must call it.
-- Never log passwords or session tokens.
+- Never log passwords or session tokens. Never print a password in command output, and never
+  pipe or pass one to a script: `npm run user:create` takes it only as hidden terminal input
+  (refuses non-TTY stdin), so the OWNER runs it — give them the command (DEPLOYMENT.md §3).
 
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel** (details and test results: docs/PLAN.md).
