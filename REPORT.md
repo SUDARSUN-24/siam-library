@@ -87,7 +87,7 @@ flowchart LR
     S[Student phone / PC]
     T[Staff phone / PC]
   end
-  subgraph Vercel["Vercel (serverless, iad1)"]
+  subgraph Vercel["Vercel (serverless, sin1 Singapore)"]
     P["Proxy<br/>CSP nonce, /admin redirect"]
     N["Next.js 16 app<br/>Server Components + Server Actions"]
   end
@@ -246,6 +246,9 @@ tests/             Playwright end-to-end tests
   rows with dotted leaders) so typed pages look like a printed book.
 - **Bilingual UI.** All strings live in one typed dictionary; TypeScript refuses to build
   if a Thai or English string is missing. Dates use the Buddhist calendar in Thai.
+  Book-form validation errors are mapped from zod issues to dictionary messages, so they
+  appear in Thai or English with the rest of the page; forms use `noValidate`, so the
+  browser's own (OS-language) bubbles never replace them.
 - **Thai typography.** Letter-spacing and justified text are applied only to English
   (`:lang(en)`) because both break Thai rendering; each preview page carries the book's
   own `lang` attribute.
@@ -276,9 +279,10 @@ The live site is **https://siam-library.vercel.app**. It runs on Vercel's free p
 
 | Part | Service | Notes |
 |---|---|---|
-| Web app | Vercel serverless functions, region `iad1` (Washington D.C.) | Built from this repository with `next build`; `postinstall` runs `prisma generate` |
-| Database | Neon PostgreSQL (free), region `us-east-1` | Added through the Vercel Marketplace; next to `iad1`, so queries are fast |
-| Page photos | Vercel Blob, **private** store | Photos have no public URL; they are streamed by `/api/uploads/[file]` only after `canViewPreview()` allows it |
+| Web app | Vercel serverless functions, region `sin1` (Singapore, set in `vercel.json`) | Built from this repository with `next build`; `postinstall` runs `prisma generate`. The GitHub repository is connected: a push to `main` deploys production, other branches get preview deployments |
+| Database | Neon PostgreSQL (free), region `ap-southeast-1` (Singapore) | Added through the Vercel Marketplace; next to `sin1` and close to Thailand, so pages load fast for students |
+| Page photos | Vercel Blob, **private** store, `sin1` | Photos have no public URL; they are streamed by `/api/uploads/[file]` only after `canViewPreview()` allows it |
+| Preview deployments | Neon branch `preview` + Blob store `siam-library-photos-preview` | Previews never touch production data or photos |
 | Secrets | Vercel environment variables | `AUTH_SECRET` (new random value, marked sensitive), database URLs, Blob token |
 
 **Why Vercel.** It gives a public HTTPS address immediately, needs no server
@@ -296,14 +300,22 @@ administration, and builds Next.js natively. Its serverless model meant three ch
 uses Neon's **pooled** URL. Migrations need a **direct** connection; with Prisma 7 this is
 set in `prisma.config.ts` (`DATABASE_URL_UNPOOLED`), because `directUrl` no longer exists
 in `schema.prisma`. Migrations are applied from the developer PC with `prisma migrate
-deploy`, not during the build, because preview deployments share the same database.
+deploy`, not during the build, so a deployment can never change a database by accident.
+
+**Separate preview environment.** The site first ran in Washington D.C. (`iad1`,
+`us-east-1`); it was moved to Singapore because the users are in Thailand. Preview
+deployments then got their own data: a Neon **branch** named `preview` (a copy-on-write
+copy of the production database, made with `neonctl branches create`) whose URLs are set
+only for Vercel's *Preview* environment, plus a separate private Blob store. Production
+keeps the main Singapore database. Previews are also behind Vercel Authentication.
 
 **Deployment steps.** `vercel link` → create the Neon database and private Blob store and
 connect both to the project → set `AUTH_SECRET`, `AUTH_TRUST_HOST`, `PREVIEW_ACCESS` and
 `NEXT_PUBLIC_SITE_URL` → `prisma migrate deploy` and the seed against Neon, with new random
 staff passwords → `vercel --prod`. `NEXT_PUBLIC_SITE_URL` is built into the app, so after
 the first deploy it was set to the real production URL and the site was deployed again;
-the QR codes now point to the live site.
+the QR codes now point to the live site. Later updates are deployed by pushing to `main`
+on GitHub.
 
 **Local development is unchanged**: `npm run db:start` + `npm run dev` use the embedded
 PostgreSQL and the `uploads/` folder, because neither Vercel variable is set locally. The
@@ -348,7 +360,7 @@ violations, and the QR sheet in print mode.
 |---|---|---|
 | Search (10) | title, Thai title, author, ISBN with hyphens, words inside the preview, no-results message, shelf & availability filters, auto-submitting filter, Thai default + language toggle | correct books returned, UI language switches |
 | Book & viewer (7) | open book from home, due date for borrowed book, 404 for unknown code, shelf page rows, page flipping (buttons, arrow keys, thumbnails, end page, back to cover), **swipe on phone**, **no sideways scroll on phone** | location text, page counter, end page content |
-| Staff (7) | /admin requires login, wrong password, **rate limit after 5 failures**, mark borrowed → public page shows due date → mark returned, STAFF cannot delete, **add book → upload 2 photos (fake image rejected) → public viewer shows them → reorder → delete**, QR sheet lists 3 shelves + 18 books | full staff workflow |
+| Staff (8) | /admin requires login, **book-form errors in Thai and English**, wrong password, **rate limit after 5 failures**, mark borrowed → public page shows due date → mark returned, STAFF cannot delete, **add book → upload 2 photos (fake image rejected) → public viewer shows them → reorder → delete**, QR sheet lists 3 shelves + 18 books | full staff workflow |
 | Security (4) | security headers + CSP nonce, upload API refuses anonymous users (401), image route rejects traversal / wrong names, malformed search parameters | defensive behaviour |
 
 Skipped by design: swipe and phone-width tests on desktop; the add-book test on mobile
@@ -381,8 +393,8 @@ phone hardware (only emulation), and printing on physical sticker paper.
 7. **Custom domain** (e.g. `library.siam.edu`) for the Vercel site, then reprint QR codes.
 8. **Thai word segmentation** for better search ranking, and search suggestions.
 9. **Usage statistics**: most-previewed books, to guide purchasing.
-10. Connect the GitHub repository to Vercel for automatic deploys and add continuous
-    integration that runs the tests on every change.
+10. **Continuous integration** (GitHub Actions) that runs the Playwright tests against
+    each preview deployment before it is merged to `main`.
 
 ## 11. Conclusion
 The project delivers a working, bilingual Book Preview website for Siam University

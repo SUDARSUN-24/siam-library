@@ -1,6 +1,7 @@
 # Deployment — Siam University Library Book Preview
 
-**Live site:** https://siam-library.vercel.app (Vercel + Neon Postgres + Vercel Blob, see §3).
+**Live site:** https://siam-library.vercel.app (Vercel `sin1` + Neon Postgres Singapore +
+Vercel Blob; deploys automatically from GitHub `main`, see §3).
 Local development (§1) still works exactly as before; Docker (§4) is the self-hosted alternative.
 
 ## 1. Run locally (Windows, PowerShell)
@@ -64,10 +65,15 @@ This is how the live site https://siam-library.vercel.app runs.
 
 | Piece | Service | Notes |
 |---|---|---|
-| App | Vercel (Next.js, serverless functions in `iad1` / Washington D.C.) | Project `siam-library`; build = `next build`, `postinstall` runs `prisma generate` |
-| Database | **Neon** Postgres (free plan, `us-east-1`), added through the Vercel Marketplace | Close to `iad1`, so each query is fast |
-| Page photos | **Vercel Blob**, store `siam-library-photos`, **private** access | Not reachable by URL — served only through `/api/uploads/[file]` after `canViewPreview()` |
+| App | Vercel (Next.js, serverless functions in `sin1` / Singapore — `vercel.json` `regions`) | Project `siam-library`; build = `next build`, `postinstall` runs `prisma generate` |
+| Source | GitHub `SUDARSUN-24/siam-library`, connected to the Vercel project | Push to `main` → production deploy; any other branch → preview deploy |
+| Database | **Neon** project `siam-library-db-sg` (free plan, `ap-southeast-1` / Singapore), added through the Vercel Marketplace | Branch `main` = production. Same region as `sin1`, so each query is fast |
+| Preview database | Neon branch **`preview`** (child of `main`) | Its URLs are set for the Vercel **Preview** environment only |
+| Page photos | **Vercel Blob**, store `siam-library-photos` (Production) and `siam-library-photos-preview` (Preview), both **private**, `sin1` | Not reachable by URL — served only through `/api/uploads/[file]` after `canViewPreview()` |
 | Rate limit | `LoginThrottle` table in Neon | Works across serverless instances |
+
+The site first ran in `iad1` with a `us-east-1` database; it was moved to Singapore
+(new Neon project in `ap-southeast-1`, `regions: ["sin1"]`) because the users are in Thailand.
 
 ### What changed in the code for Vercel
 - **Database URLs.** The app connects with the pooled `DATABASE_URL`. Prisma CLI uses
@@ -96,6 +102,30 @@ Set in Vercel → Project → Settings → Environment Variables (Production):
 | `AUTH_TRUST_HOST` | `true` |
 | `PREVIEW_ACCESS` | `public` |
 | `NEXT_PUBLIC_SITE_URL` | `https://siam-library.vercel.app` |
+
+### Preview environment variables
+Preview deployments get **their own** values, so they never touch production data:
+
+| Variable | Preview value |
+|---|---|
+| `DATABASE_URL` / `DATABASE_URL_UNPOOLED` | pooled / direct URL of Neon branch `preview` (sensitive) |
+| `BLOB_READ_WRITE_TOKEN` (+ `BLOB_STORE_ID`) | store `siam-library-photos-preview` |
+| `AUTH_SECRET` | its own random value (sensitive) — production sessions are not valid on previews |
+| `AUTH_TRUST_HOST`, `PREVIEW_ACCESS` | `true`, `public` |
+| `NEXT_PUBLIC_SITE_URL` | `https://siam-library.vercel.app` (QR codes always point to the live site) |
+
+The Neon integration's own `PG*` / `POSTGRES_*` variables exist for Production only. How
+the preview branch was made (Neon CLI, `npm i -g neonctl`, command `neon`):
+```powershell
+$o = '--org-id','org-noisy-wave-22191063','--project-id','cool-poetry-70535299'
+neon branches create --name preview --parent main @o        # copy of production data
+neon connection-string preview --pooled @o | vercel env add DATABASE_URL preview --sensitive
+neon connection-string preview @o          | vercel env add DATABASE_URL_UNPOOLED preview --sensitive
+```
+The branch is a copy of production at the moment it was created (books, and staff
+accounts with the passwords they had then). To refresh it from production:
+`neon branches reset preview --parent @o`. After a schema change, run `npm run db:deploy`
+against the preview branch as well (load its direct URL into `DATABASE_URL_UNPOOLED`).
 
 ### First-time setup (what was done)
 ```powershell
@@ -128,15 +158,24 @@ Re-running the seed **replaces the 18 demo books** (and their loan status) — d
 once staff have started editing real data. To add or reset a staff account on the live site,
 load the variables the same way and run `npm run user:create -- <email> <name> <ADMIN|STAFF>`.
 
-Migrations are **not** run during the Vercel build (preview deployments share the same
-database). After a schema change: `npm run db:deploy` against Neon first, then `vercel --prod`.
+Migrations are **not** run during the Vercel build, so a deploy never changes a database
+by itself. After a schema change: `npm run db:deploy` against the production database
+(and the `preview` branch) first, then push.
 
 ### Deploying an update
 ```powershell
-npm run build          # must pass locally
-vercel --prod          # build logs stream to the terminal; also in the Vercel dashboard
+npm run build; npm run lint     # must pass locally
+git push origin main            # Vercel builds and deploys production automatically
+git push origin my-branch       # → preview deployment (preview database + photo store)
 vercel logs --environment production --since 15m    # runtime errors
 ```
+`vercel --prod` from the PC still works as a manual fallback.
+
+> **Commit author must be the Vercel account owner.** On the Hobby plan Vercel blocks
+> any deployment (Git push *or* CLI from this repo) whose commit author is a different
+> GitHub user ("the commit author doesn't have permission to create deployments").
+> Commit with an email that belongs to the GitHub account `SUDARSUN-24`
+> (`git config user.email <that email>`).
 
 ### Testing the live site
 ```powershell
@@ -153,8 +192,8 @@ photos are deleted). If a run fails half-way, check the admin list for a leftove
 - Function request body: 4.5 MB (handled by browser compression).
 - Free (Hobby) plan is for non-commercial use. The Neon free plan suspends the database
   when idle, so the first request after a quiet period can take a second or two longer.
-- Preview deployments (`vercel` without `--prod`) use the **same** Neon database and Blob
-  store, and are protected by Vercel Authentication.
+- Preview deployments use their **own** Neon branch and Blob store (see above) and are
+  protected by Vercel Authentication.
 
 ## 4. Deploy on a university server with Docker (alternative)
 

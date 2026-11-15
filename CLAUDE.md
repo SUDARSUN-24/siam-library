@@ -11,8 +11,10 @@ has a QR code that opens its page — most students arrive from a QR scan on the
 
 Student: Sudasun, B.Sc. Information Technology, Siam University (university project).
 
-**Live site (main target): https://siam-library.vercel.app** — Vercel + Neon Postgres +
-private Vercel Blob. Local dev must keep working too. See docs/DEPLOYMENT.md §3.
+**Live site (main target): https://siam-library.vercel.app** — Vercel (`sin1` Singapore) +
+Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` is
+connected: push to `main` = production deploy, other branches = preview deploys (own Neon
+branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
 
 ## Tech stack
 - Next.js 16 (App Router, Turbopack, `src/` dir) + React 19 + TypeScript
@@ -21,8 +23,10 @@ private Vercel Blob. Local dev must keep working too. See docs/DEPLOYMENT.md §3
 - Auth.js v5 (`next-auth@5 beta`) — Credentials provider, JWT session (8 h), bcrypt (`bcryptjs`)
 - sharp (verify + resize + WebP), `qrcode` (SVG QR codes), zod (validation)
 - Playwright (end-to-end tests, desktop Chrome + Pixel 7)
-- **Hosting: Vercel** (project `siam-library`, functions in `iad1`), **Neon** Postgres
-  (`us-east-1`, via Vercel Marketplace), **Vercel Blob** private store `siam-library-photos`
+- **Hosting: Vercel** (project `siam-library`, functions in `sin1` via `vercel.json`),
+  **Neon** Postgres project `siam-library-db-sg` (`ap-southeast-1`, via Vercel Marketplace;
+  branch `main` = Production, branch `preview` = Preview env only), **Vercel Blob** private
+  stores `siam-library-photos` (Production) and `siam-library-photos-preview` (Preview)
 - Docker + docker-compose (app + postgres) — alternative for a university server
 - Local dev database: `embedded-postgres` (real PostgreSQL from npm — no install, no Docker)
 
@@ -68,12 +72,16 @@ npm run user:create -- <email> <name> <ADMIN|STAFF>
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
 
 # Vercel (CLI is installed globally and logged in; project already linked in .vercel/)
-vercel --prod                  # deploy production
+git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
 vercel logs --environment production --since 15m
 vercel env pull <file OUTSIDE the repo> --environment production --yes   # never into .env.local
 npm run db:deploy              # with DATABASE_URL(_UNPOOLED) from Neon loaded → migrate live DB
 $env:E2E_BASE_URL="https://siam-library.vercel.app"; npm run test:e2e   # + SEED_* = live logins
+# Neon CLI (`neon`, signed in): always pass the org/project
+neon branches list --org-id org-noisy-wave-22191063 --project-id cool-poetry-70535299
 ```
+Commits must be authored by the GitHub account that owns the Vercel project (SUDARSUN-24),
+or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.
 Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
 The live site uses the same emails with different random passwords — never write those into a file.
 
@@ -135,9 +143,7 @@ The live site uses the same emails with different random passwords — never wri
 
 Known gaps / not verified:
 - Docker images were never built or run (Docker not installed on the dev PC).
-- Git repo is not connected to Vercel — deploys are manual `vercel --prod` from this PC.
-- Preview deployments would share the production Neon DB and Blob store.
 - Only emulated phones tested; QR stickers not printed on real paper.
 - No web UI for staff accounts (use `npm run user:create`).
-- Zod error messages on the book form are English-only (Thai UI shows them in English).
+- Book-form validation messages are translated (zod issues → `dict.ts`, forms `noValidate`).
 - End-of-preview text says the counter is on the ground floor — placeholder; confirm with the library.
