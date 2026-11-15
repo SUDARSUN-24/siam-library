@@ -354,7 +354,7 @@ violations, and the QR sheet in print mode.
 
 ### 9.2 Results
 
-**56 tests: 53 passed, 3 skipped by design, 0 failed** (two consecutive runs, about 55 s each).
+**58 tests: 55 passed, 3 skipped by design, 0 failed** (repeatable; about 1 minute locally, 2 minutes against the live site).
 
 | Area | Tests | What is checked |
 |---|---|---|
@@ -371,8 +371,8 @@ violations while using search, viewer, language toggle, login and the QR sheet; 
 `PREVIEW_ACCESS=students` the book page shows the lock message and photos return 403;
 `/api/uploads/..%2F.env` returns 404.
 
-**Live site (Vercel):** the same 56 tests were run against https://siam-library.vercel.app
-with the live staff accounts: **53 passed, 3 skipped**. The first live run found one real
+**Live site (Vercel):** the same 58 tests were run against https://siam-library.vercel.app
+(Singapore) with the live staff accounts: **55 passed, 3 skipped**. The first live run found one real
 deployment bug (photos returned 404, see §6.3), which was fixed and redeployed. The
 add-book test also uploads a noisy 3000×4000 photo (well over Vercel's 4.5 MB body limit)
 to show that browser-side compression lets it through. All test books and photos were

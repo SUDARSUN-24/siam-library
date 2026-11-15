@@ -136,9 +136,11 @@ The live site uses the same emails with different random passwords — never wri
 
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel** (see docs/PLAN.md).
-- Live: https://siam-library.vercel.app — Playwright against it: 53 passed, 3 skipped.
+- Live: https://siam-library.vercel.app — Playwright against it (2026-11-15): 55 passed, 3 skipped.
 - Student pages, staff admin, uploads, QR sheet, Thai/English, security headers done.
-- Playwright: 56 tests (28 × desktop + mobile) → 53 passed, 3 skipped by design; repeatable.
+- Playwright: 58 tests (29 × desktop + mobile) → 55 passed, 3 skipped by design; repeatable.
+- GitHub auto-deploy verified (commit 26ffa17 deployed itself); preview deploys use the
+  Neon `preview` branch (verified) and the preview Blob store.
 - Docs: DEPLOYMENT.md, STAFF_GUIDE.md, REPORT.md written.
 
 Known gaps / not verified:
