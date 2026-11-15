@@ -178,7 +178,13 @@ Two-step login settings are kept when a password changes.
 
 Migrations are **not** run during the Vercel build, so a deploy never changes a database
 by itself. After a schema change: `npm run db:deploy` against the production database
-(and the `preview` branch) first, then push.
+(and the `preview` branch) first, then push. Example: migration `*_catalogue_search` creates
+the `pg_trgm` extension (available on Neon) and the search indexes — the search code fails
+without it, so it must be on the database before that code is deployed.
+
+`npm run seed:bulk` (fake books for load tests) is for the LOCAL database only: it refuses to
+run when `DATABASE_URL` is not localhost, `DATABASE_URL_UNPOOLED` is set, on Vercel, or with
+`NODE_ENV=production`. Never point it at Neon.
 
 ### Deploying an update
 ```powershell

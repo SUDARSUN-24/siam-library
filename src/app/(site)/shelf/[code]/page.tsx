@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { BookGrid } from "@/components/book-card";
-import { canViewPreview } from "@/lib/access";
-import { getViewerSession } from "@/lib/auth-session";
 import { BookQr } from "@/components/book-qr";
+import { CatalogueView } from "@/components/catalogue/catalogue-view";
 import { getShelfByCode } from "@/lib/books";
+import { loadCatalogue } from "@/lib/catalogue-page";
 import { fmt } from "@/lib/dict";
-import { getDict } from "@/lib/i18n";
 import { shelfCodeSchema } from "@/lib/validation";
 
 async function load(params: Promise<{ code: string }>) {
@@ -21,20 +19,19 @@ export async function generateMetadata({ params }: PageProps<"/shelf/[code]">): 
   return shelf ? { title: `${shelf.code} · ${shelf.nameEn}` } : {};
 }
 
-export default async function ShelfPage({ params }: PageProps<"/shelf/[code]">) {
+/** A shelf (QR sticker target): its books in shelf order, 24 per page, with the catalogue filters. */
+export default async function ShelfPage({ params, searchParams }: PageProps<"/shelf/[code]">) {
   const shelf = await load(params);
   if (!shelf) notFound();
-  const [{ locale, t }, session] = await Promise.all([getDict(), getViewerSession()]);
-  const showPhotos = canViewPreview(session);
-
-  const rows = [...new Set(shelf.books.map((b) => b.row))].sort((a, b) => a - b);
-  const available = shelf.books.filter((b) => b.status === "AVAILABLE").length;
+  const data = await loadCatalogue(searchParams, { shelf: shelf.code });
+  const { t, locale } = data;
+  const counts = data.shelves.find((s) => s.code === shelf.code);
 
   return (
     <>
       <section className="border-b border-border/70" style={{ background: `linear-gradient(180deg, ${shelf.color}14, transparent)` }}>
         <div className="mx-auto max-w-6xl px-4 pt-5 pb-8 sm:pt-8">
-          <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+          <Link href="/books" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t.backToBooks}
           </Link>
@@ -46,33 +43,23 @@ export default async function ShelfPage({ params }: PageProps<"/shelf/[code]">) 
               {shelf.code}
             </span>
             <div className="min-w-0">
-              <p className="eyebrow text-muted-foreground">
-                {fmt(t.shelfHeading, { code: shelf.code })}
-              </p>
+              <p className="eyebrow text-muted-foreground">{fmt(t.shelfHeading, { code: shelf.code })}</p>
               <h1 className="font-serif text-2xl leading-tight font-semibold sm:text-3xl">
                 {locale === "th" ? shelf.nameTh : shelf.nameEn}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {locale === "th" ? shelf.nameEn : shelf.nameTh} ·{" "}
-                {fmt(t.booksCount, { n: shelf.books.length })} ·{" "}
-                <span className="text-available">{fmt(t.availableCount, { n: available })}</span>
+                {locale === "th" ? shelf.nameEn : shelf.nameTh} · {fmt(t.booksCount, { n: (counts?.total ?? 0).toLocaleString("en-US") })} ·{" "}
+                <span className="text-available">{fmt(t.availableCount, { n: (counts?.available ?? 0).toLocaleString("en-US") })}</span>
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4">
-        {rows.map((row) => (
-          <section key={row} className="pt-9">
-            <h2 className="mb-4 flex items-center gap-3 font-serif text-lg font-semibold">
-              {fmt(t.shelfRowHeading, { row })}
-              <span className="h-px flex-1 bg-border" aria-hidden="true" />
-            </h2>
-            <BookGrid books={shelf.books.filter((b) => b.row === row)} t={t} locale={locale} showPhotos={showPhotos} />
-          </section>
-        ))}
-        <div className="mt-12 max-w-md">
+      <CatalogueView {...data} basePath={`/shelf/${shelf.code}`} fixed={data.fixedKeys} groupByRow={data.sort === "shelf"} />
+
+      <div className="mx-auto mt-12 max-w-6xl px-4">
+        <div className="max-w-md">
           <BookQr path={`/shelf/${shelf.code}`} label={t.scanToOpen} code={shelf.code} />
         </div>
       </div>

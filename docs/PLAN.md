@@ -64,6 +64,25 @@
 - [x] Playwright against the live site: 53 passed, 3 skipped; test data removed
 - [x] DEPLOYMENT.md §3, REPORT.md §7, CLAUDE.md updated
 
+## Phase 8 — Catalogue for thousands of books (2026-11-15)
+- [x] Home is a starting point: hero search, shelf cards and category tiles with counts, three
+      sideways rows of up to 10 books (New arrivals, Available now, Thai books) with "See all →"
+- [x] `/books` catalogue: filters (shelf, category, language, available only) in a sidebar /
+      bottom sheet on phones, sort (best match, shelf order, title, newest), 24 per page with
+      page numbers; everything in the URL. Old `/?q=…&shelf=…` links redirect there
+- [x] `/shelf/[code]` and new `/category/[slug]` reuse the catalogue layout (shelf keeps row headings)
+- [x] Search in Postgres: each word must match title / other title / author / publisher /
+      category (also by its Thai name) / code / ISBN / preview text; typo tolerance with pg_trgm
+      (`<%`, threshold 0.45); GIN trigram indexes + B-tree indexes for every browse order
+- [x] Live suggestions under the search bar (`/api/suggest`, top 5, after 2 characters,
+      200 ms debounce, ARIA combobox: ↑/↓, Enter, Esc)
+- [x] `npm run seed:bulk` — fake books for LOCAL load tests; refuses any non-localhost database
+- [x] Load test, 5,000 books, production build on the dev PC: home 55 ms, `/books` and
+      shelf/category pages 15–25 ms, full searches ~70 ms, suggestions ~40 ms
+- [x] Playwright locally: 93 passed, 7 skipped (Thai typo test runs only against the live site)
+- Known: the Windows Postgres of `npm run db:start` builds trigrams from ASCII only, so Thai
+  typo tolerance is verified on Neon (probe: `ฐานข้อมุล` ≈ `ฐานข้อมูล`, similarity 0.5), not locally
+
 ## Not done / not verified
 - [ ] Build and run the Docker images on the university server (no Docker on the dev PC)
 - [ ] Connect the Git repository to Vercel (automatic deploys); separate DB branch for preview deploys

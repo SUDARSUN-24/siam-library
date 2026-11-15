@@ -1,7 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { db } from "./db";
 import type { Prisma } from "@/generated/prisma/client";
-import type { SearchFilters } from "./validation";
+import { categorySlug, PAGE_SIZE, type Sort } from "./catalogue";
+import { searchBookIds } from "./search";
 
 const cardSelect = {
   id: true,
@@ -25,55 +27,95 @@ const cardSelect = {
 
 export type BookCardData = Prisma.BookGetPayload<{ select: typeof cardSelect }>;
 
-/** Search across title, alternative title, author, ISBN, category and preview text (Thai + English). */
-export async function searchBooks(f: SearchFilters) {
-  const and: Prisma.BookWhereInput[] = [];
+export type CategoryCount = { name: string; slug: string; count: number };
 
-  if (f.q) {
-    const words = f.q.split(/\s+/).filter(Boolean).slice(0, 6);
-    for (const w of words) {
-      const contains = { contains: w, mode: "insensitive" as const };
-      const isbnLike = w.replace(/-/g, "");
-      and.push({
-        OR: [
-          { title: contains },
-          { altTitle: contains },
-          { author: contains },
-          { category: contains },
-          { code: contains },
-          { publisher: contains },
-          ...(isbnLike ? [{ isbn: { contains: isbnLike } }] : []),
-          { pages: { some: { text: contains } } },
-        ],
-      });
-    }
-  }
-  if (f.shelf) and.push({ shelf: { code: f.shelf } });
-  if (f.category) and.push({ category: f.category });
-  if (f.status) and.push({ status: f.status });
+/** Every category with its number of books (one GROUP BY on the indexed column). */
+export const getCategoriesWithCounts = cache(async (): Promise<CategoryCount[]> => {
+  const rows = await db.book.groupBy({ by: ["category"], _count: { _all: true }, orderBy: { category: "asc" } });
+  return rows.map((r) => ({ name: r.category, slug: categorySlug(r.category), count: r._count._all }));
+});
 
-  return db.book.findMany({
-    where: and.length ? { AND: and } : undefined,
-    select: cardSelect,
-    orderBy: { code: "asc" },
-    take: 120,
-  });
-}
-
-export async function getShelvesWithCounts() {
-  const shelves = await db.shelf.findMany({ orderBy: { code: "asc" } });
-  const counts = await db.book.groupBy({ by: ["shelfId", "status"], _count: { _all: true } });
+/** Shelves with total / available counts (cached per request). */
+export const getShelvesWithCounts = cache(async () => {
+  const [shelves, counts] = await Promise.all([
+    db.shelf.findMany({ orderBy: { code: "asc" } }),
+    db.book.groupBy({ by: ["shelfId", "status"], _count: { _all: true } }),
+  ]);
   return shelves.map((s) => {
     const mine = counts.filter((c) => c.shelfId === s.id);
     const total = mine.reduce((n, c) => n + c._count._all, 0);
     const available = mine.filter((c) => c.status === "AVAILABLE").reduce((n, c) => n + c._count._all, 0);
     return { ...s, total, available };
   });
+});
+
+const ROW_SIZE = 10;
+
+/** The three home-page rows — 10 books each, each served by its own index. */
+export async function getHomeRows() {
+  const newest = { createdAt: "desc" as const };
+  const [newArrivals, availableNow, thaiBooks] = await Promise.all([
+    db.book.findMany({ select: cardSelect, orderBy: [newest, { code: "asc" }], take: ROW_SIZE }),
+    db.book.findMany({ where: { status: "AVAILABLE" }, select: cardSelect, orderBy: [newest, { code: "asc" }], take: ROW_SIZE }),
+    db.book.findMany({ where: { language: "th" }, select: cardSelect, orderBy: [newest, { code: "asc" }], take: ROW_SIZE }),
+  ]);
+  return { newArrivals, availableNow, thaiBooks };
 }
 
-export async function getCategories() {
-  const rows = await db.book.findMany({ distinct: ["category"], select: { category: true }, orderBy: { category: "asc" } });
-  return rows.map((r) => r.category);
+export type CatalogueFilters = {
+  q?: string;
+  shelf?: string;
+  category?: string; // category NAME
+  lang?: "th" | "en";
+  available?: boolean;
+};
+
+export type CataloguePage = { books: BookCardData[]; total: number; page: number; pageCount: number };
+
+/** One page (PAGE_SIZE books) of the catalogue: only those books are loaded. */
+export async function findCatalogue(f: CatalogueFilters, sort: Sort, page: number): Promise<CataloguePage> {
+  const skip = (page - 1) * PAGE_SIZE;
+  let books: BookCardData[];
+  let total: number;
+
+  if (f.q) {
+    const found = await searchBookIds({ ...f, q: f.q }, { sort, skip, take: PAGE_SIZE });
+    books = await cardsInOrder(found.ids);
+    total = found.total;
+  } else {
+    const where: Prisma.BookWhereInput = {
+      ...(f.shelf && { shelf: { code: f.shelf } }),
+      ...(f.category && { category: f.category }),
+      ...(f.lang && { language: f.lang }),
+      ...(f.available && { status: "AVAILABLE" as const }),
+    };
+    const order: Prisma.BookOrderByWithRelationInput[] =
+      sort === "title"
+        ? [{ title: "asc" }, { code: "asc" }]
+        : sort === "newest"
+          ? [{ createdAt: "desc" }, { code: "asc" }]
+          : f.shelf
+            ? [{ row: "asc" }, { code: "asc" }]
+            : [{ code: "asc" }];
+    [books, total] = await Promise.all([
+      db.book.findMany({ where, select: cardSelect, orderBy: order, skip, take: PAGE_SIZE }),
+      db.book.count({ where }),
+    ]);
+  }
+  return { books, total, page, pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+/** Top matches for the live search dropdown (titles, authors, codes, ISBN — not page text). */
+export async function suggestBooks(q: string, take = 5) {
+  const { ids } = await searchBookIds({ q }, { sort: "relevance", skip: 0, take, withText: false, withCount: false });
+  return cardsInOrder(ids);
+}
+
+async function cardsInOrder(ids: string[]) {
+  if (!ids.length) return [];
+  const rows = await db.book.findMany({ where: { id: { in: ids } }, select: cardSelect });
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.map((id) => byId.get(id)).filter((b): b is BookCardData => Boolean(b));
 }
 
 export async function getBookByCode(code: string) {
@@ -84,10 +126,7 @@ export async function getBookByCode(code: string) {
 }
 
 export async function getShelfByCode(code: string) {
-  return db.shelf.findUnique({
-    where: { code },
-    include: { books: { select: cardSelect, orderBy: [{ row: "asc" }, { code: "asc" }] } },
-  });
+  return db.shelf.findUnique({ where: { code } });
 }
 
 /** URL the browser uses for an uploaded page photo (served by /api/uploads/[file]). */

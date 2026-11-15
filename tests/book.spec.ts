@@ -3,8 +3,8 @@ import { setEnglish } from "./helpers";
 
 test.beforeEach(async ({ context, baseURL }) => setEnglish(context, baseURL!));
 
-test("open a book from the home page", async ({ page }) => {
-  await page.goto("/");
+test("open a book from the catalogue", async ({ page }) => {
+  await page.goto("/books");
   await page.getByTestId("book-card").filter({ hasText: "Thinking in Algorithms" }).click();
   await expect(page).toHaveURL(/\/book\/A-001$/);
   await expect(page.getByTestId("book-title")).toHaveText("Thinking in Algorithms");

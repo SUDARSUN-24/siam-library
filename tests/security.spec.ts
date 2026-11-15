@@ -27,4 +27,7 @@ test("image route only serves <uuid>.webp names", async ({ request }) => {
 test("bad search parameters are ignored, not errors", async ({ page }) => {
   const res = await page.goto("/?status=DROP%20TABLE&shelf=%3Cscript%3E&q=" + "a".repeat(500));
   expect(res?.status()).toBe(200);
+  const res2 = await page.goto("/books?page=-1&sort=evil&lang=xx&available=maybe&category=%3Cscript%3E&shelf=1");
+  expect(res2?.status()).toBe(200);
+  await expect(page.getByTestId("result-count")).toHaveText(/[0-9]+/);
 });

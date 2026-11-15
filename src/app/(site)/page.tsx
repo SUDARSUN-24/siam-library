@@ -1,32 +1,40 @@
-import { BookGrid } from "@/components/book-card";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowRight } from "lucide-react";
+import { BookRow } from "@/components/book-row";
+import { CategoryTile } from "@/components/category-tile";
+import { SearchBox } from "@/components/search-box";
+import { ShelfCard } from "@/components/shelf-card";
 import { canViewPreview } from "@/lib/access";
 import { getViewerSession } from "@/lib/auth-session";
-import { SearchForm } from "@/components/search-form";
-import { ShelfCard } from "@/components/shelf-card";
-import { getCategories, getShelvesWithCounts, searchBooks } from "@/lib/books";
+import { getCategoriesWithCounts, getHomeRows, getShelvesWithCounts } from "@/lib/books";
+import { catalogueHref, categorySlug } from "@/lib/catalogue";
 import { fmt } from "@/lib/dict";
 import { getDict } from "@/lib/i18n";
-import { searchParamsSchema } from "@/lib/validation";
+import { parseCatalogueParams } from "@/lib/validation";
 
+/**
+ * Home: a starting point, not the full list. Loads only the shelf/category counts (GROUP BY)
+ * and 3 × 10 books, so it stays fast however big the catalogue gets.
+ */
 export default async function HomePage({ searchParams }: PageProps<"/">) {
+  // Old links (/?q=…&shelf=…&status=…) → the catalogue with the same filters.
   const raw = await searchParams;
-  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
-  const filters = searchParamsSchema.parse({
-    q: one(raw.q),
-    shelf: one(raw.shelf),
-    category: one(raw.category),
-    status: one(raw.status),
-  });
+  if (["q", "shelf", "category", "status"].some((k) => raw[k] !== undefined)) {
+    const p = parseCatalogueParams(raw);
+    redirect(catalogueHref("/books", { ...p, category: p.category && categorySlug(p.category) }));
+  }
 
-  const [{ locale, t }, shelves, categories, books, session] = await Promise.all([
+  const [{ locale, t }, shelves, categories, rows, session] = await Promise.all([
     getDict(),
     getShelvesWithCounts(),
-    getCategories(),
-    searchBooks(filters),
+    getCategoriesWithCounts(),
+    getHomeRows(),
     getViewerSession(),
   ]);
   const showPhotos = canViewPreview(session);
-  const filtered = Boolean(filters.q || filters.shelf || filters.category || filters.status);
+  const total = shelves.reduce((n, s) => n + s.total, 0);
+  const byCount = [...categories].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
   return (
     <>
@@ -37,14 +45,22 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <h1 className="font-serif text-[2rem] leading-tight font-semibold text-balance sm:text-5xl">{t.heroTitle}</h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">{t.heroSubtitle}</p>
           <div className="mt-7">
-            <SearchForm t={t} locale={locale} filters={filters} shelves={shelves} categories={categories} />
+            <SearchBox t={t} action="/books" />
           </div>
+          <Link
+            href="/books"
+            className="group mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary"
+            data-testid="browse-all"
+          >
+            {fmt(t.browseAll, { n: total.toLocaleString("en-US") })}
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
         </div>
       </section>
 
-      {/* Shelves */}
-      {!filtered && (
-        <section id="shelves" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-10">
+      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] px-4">
+        {/* Shelves */}
+        <section id="shelves" className="scroll-mt-20 pt-10">
           <h2 className="mb-4 font-serif text-xl font-semibold">{t.shelvesHeading}</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {shelves.map((s) => (
@@ -52,33 +68,26 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             ))}
           </div>
         </section>
-      )}
 
-      {/* Books */}
-      <section className="mx-auto max-w-6xl px-4 pt-10" aria-live="polite">
-        <div className="mb-5 flex items-baseline justify-between gap-4">
-          <h2 className="font-serif text-xl font-semibold">
-            {filters.q ? (
-              <>
-                {t.resultsFor} <span className="text-primary">“{filters.q}”</span>
-              </>
-            ) : (
-              t.booksHeading
-            )}
-          </h2>
-          <span className="shrink-0 text-sm text-muted-foreground" data-testid="result-count">
-            {books.length === 1 ? t.bookCount1 : fmt(t.booksCount, { n: books.length })}
-          </span>
-        </div>
-        {books.length ? (
-          <BookGrid books={books} t={t} locale={locale} showPhotos={showPhotos} />
-        ) : (
-          <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
-            <p className="font-serif text-lg font-semibold">{t.noResults}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{t.noResultsHint}</p>
-          </div>
+        {/* Categories */}
+        {byCount.length > 0 && (
+          <section id="categories" className="scroll-mt-20 pt-10">
+            <h2 className="mb-4 font-serif text-xl font-semibold">{t.categoriesHeading}</h2>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {byCount.map((c) => (
+                <li key={c.slug}>
+                  <CategoryTile name={c.name} count={c.count} t={t} locale={locale} />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
-      </section>
+
+        {/* Rows */}
+        <BookRow id="new" title={t.rowNewArrivals} seeAllHref="/books?sort=newest" books={rows.newArrivals} t={t} locale={locale} showPhotos={showPhotos} />
+        <BookRow id="available" title={t.rowAvailableNow} seeAllHref="/books?available=1" books={rows.availableNow} t={t} locale={locale} showPhotos={showPhotos} />
+        <BookRow id="thai" title={t.rowThaiBooks} seeAllHref="/books?lang=th" books={rows.thaiBooks} t={t} locale={locale} showPhotos={showPhotos} />
+      </div>
     </>
   );
 }

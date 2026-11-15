@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { fmt, type Dict } from "./dict";
+import { SORTS, type CatalogueParams } from "./catalogue";
 
 /** Book code: shelf letters + dash + 3 digits, e.g. "A-001". */
 export const bookCodeSchema = z
@@ -22,14 +23,40 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
-/** Home page filters from the URL (?q=&shelf=&category=&status=). Bad values are dropped, never thrown. */
-export const searchParamsSchema = z.object({
-  q: z.string().trim().max(100).optional().catch(undefined),
-  shelf: shelfCodeSchema.optional().catch(undefined),
-  category: z.string().trim().max(60).optional().catch(undefined),
-  status: z.enum(["AVAILABLE", "BORROWED"]).optional().catch(undefined),
-});
-export type SearchFilters = z.infer<typeof searchParamsSchema>;
+const emptyToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+
+/**
+ * Catalogue URL parameters (/books, /shelf/A, /category/x — see src/lib/catalogue.ts).
+ * Bad values are dropped, never thrown. Old home-page links used ?status=AVAILABLE.
+ */
+export const catalogueParamsSchema = z
+  .object({
+    q: z.preprocess(emptyToUndefined, z.string().trim().max(100).optional()).catch(undefined),
+    shelf: z.preprocess(emptyToUndefined, shelfCodeSchema.optional()).catch(undefined),
+    category: z.preprocess(emptyToUndefined, z.string().trim().max(80).optional()).catch(undefined),
+    lang: z.enum(["th", "en"]).optional().catch(undefined),
+    available: z
+      .string()
+      .optional()
+      .transform((v) => (v && ["1", "true", "on"].includes(v) ? true : undefined))
+      .catch(undefined),
+    status: z.enum(["AVAILABLE", "BORROWED"]).optional().catch(undefined),
+    sort: z.enum(SORTS).optional().catch(undefined),
+    page: z.coerce.number().int().min(1).max(10_000).optional().catch(undefined),
+  })
+  .transform(({ status, available, ...rest }): CatalogueParams => ({
+    ...rest,
+    available: available || status === "AVAILABLE" || undefined,
+  }));
+
+/** Next's searchParams values can be arrays (?a=1&a=2) — keep the first. */
+export function parseCatalogueParams(raw: Record<string, string | string[] | undefined>) {
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  return catalogueParamsSchema.parse(Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, one(v)])));
+}
+
+/** Live search suggestions (/api/suggest?q=). */
+export const suggestQuerySchema = z.string().trim().min(2).max(100);
 
 /** Staff login form. */
 export const loginSchema = z.object({

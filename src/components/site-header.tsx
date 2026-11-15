@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Languages } from "lucide-react";
+import { Languages, LibraryBig } from "lucide-react";
 import { setLocale } from "@/app/actions/locale";
 import type { Dict, Locale } from "@/lib/dict";
 
@@ -21,7 +21,7 @@ export function LanguageToggle({ t, locale }: { t: Dict; locale: Locale }) {
         type="submit"
         aria-label={t.langToggleAria}
         data-testid="lang-toggle"
-        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium hover:border-primary/40 hover:text-primary"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium whitespace-nowrap hover:border-primary/40 hover:text-primary"
       >
         <Languages className="size-4" aria-hidden="true" />
         {t.langToggle}
@@ -42,6 +42,14 @@ export function SiteHeader({ t, locale }: { t: Dict; locale: Locale }) {
           </span>
         </Link>
         <nav className="ml-auto flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/books"
+            data-testid="nav-books"
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground sm:px-3"
+          >
+            <LibraryBig className="size-4 sm:hidden" aria-hidden="true" />
+            {t.navBooks}
+          </Link>
           <Link
             href="/#shelves"
             className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground sm:inline-flex"

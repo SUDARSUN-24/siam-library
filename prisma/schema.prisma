@@ -57,9 +57,18 @@ model Book {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  @@index([shelfId])
-  @@index([status])
+  @@index([shelfId, row, code]) // shelf pages
+  @@index([status, createdAt]) // "Available now"
+  @@index([language, createdAt]) // "Thai books"
   @@index([category])
+  @@index([createdAt]) // "New arrivals", sort by newest
+  @@index([title])
+  // Search (src/lib/search.ts): trigram indexes speed up ILIKE '%word%' and fuzzy matching.
+  // The pg_trgm extension is created in migration 20261115070702_catalogue_search.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_title_trgm_idx")
+  @@index([altTitle(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_altTitle_trgm_idx")
+  @@index([author(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_author_trgm_idx")
+  @@index([publisher(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_publisher_trgm_idx")
 }
 
 /// One page of the preview: a staff photo (IMAGE) or typed text (TEXT).
@@ -74,6 +83,7 @@ model PreviewPage {
   createdAt DateTime @default(now())
 
   @@index([bookId, order])
+  @@index([text(ops: raw("gin_trgm_ops"))], type: Gin, map: "PreviewPage_text_trgm_idx")
 }
 
 model User {

@@ -12,6 +12,7 @@ import { config } from "@/lib/config";
 import { categoryLabel, fmt, formatDate } from "@/lib/dict";
 import { getDict } from "@/lib/i18n";
 import { bookCodeSchema } from "@/lib/validation";
+import { categoryPath } from "@/lib/catalogue";
 import { BookQr } from "@/components/book-qr";
 
 async function load(params: Promise<{ code: string }>) {
@@ -44,9 +45,14 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
       }))
     : [];
 
-  const details: [string, string | number | null | undefined][] = [
+  const details: [string, React.ReactNode][] = [
     [t.author, book.author],
-    [t.category, categoryLabel(book.category, locale)],
+    [
+      t.category,
+      <Link key="c" href={categoryPath(book.category)} className="text-primary underline-offset-4 hover:underline">
+        {categoryLabel(book.category, locale)}
+      </Link>,
+    ],
     [t.language, book.language === "th" ? t.langTh : t.langEn],
     [t.year, book.year ? (locale === "th" ? `${book.year + 543} (${book.year})` : book.year) : null],
     [t.publisher, book.publisher],
@@ -56,7 +62,7 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-5 pb-4 sm:pt-8">
-      <Link href="/" className="no-print inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+      <Link href="/books" className="no-print inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
         <ArrowLeft className="size-4" aria-hidden="true" />
         {t.backToBooks}
       </Link>

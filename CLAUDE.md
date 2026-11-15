@@ -31,6 +31,7 @@ root-anchored (`/uploads/`, not `uploads/` — that would also drop `src/app/api
 npm run db:start            # start local PostgreSQL (keep this window open)
 npm run db:migrate          # create/apply migrations (dev)
 npm run db:seed             # 18 demo books + demo logins (re-runnable)
+npm run seed:bulk           # +2,000 fake books, LOCAL ONLY (refuses non-localhost); `-- 5000`, `-- --remove`
 npm run build               # production build (must pass after every change)
 npm run lint                # ESLint (next build no longer lints)
 npm run test:e2e            # Playwright (needs db running + seeded; reuses :3000)
@@ -52,7 +53,13 @@ The live site uses the same emails with different random passwords — never wri
 - Next 16: `params` / `searchParams` are Promises — always `await` them. Middleware is `src/proxy.ts`.
 - Read `node_modules/next/dist/docs/` before using an unfamiliar Next API (see AGENTS.md).
 - Server Components by default; `"use client"` only for interactivity (viewer, upload, selects).
-- All DB access through `src/lib/db.ts` (single Prisma client). No raw SQL.
+- All DB access through `src/lib/db.ts` (single Prisma client). No raw SQL — the one exception
+  is the search in `src/lib/search.ts` (pg_trgm operators), parameterized `Prisma.sql` only.
+- Public catalogue: home = starting point (counts + 3 rows of 10); the full list is `/books`
+  (filters/sort/page in the URL, src/lib/catalogue.ts), reused by `/shelf/[code]` and
+  `/category/[slug]` via `loadCatalogue()` + `<CatalogueView>`. Load only one page (24) of books.
+- Local Postgres (Windows build) makes trigrams from ASCII only → Thai typo tolerance works on
+  Neon (Linux) but not locally; Thai still matches by substring everywhere.
 - All UI strings live in `src/lib/dict.ts` (Thai + English; TS enforces both). Server code
   gets them via `getDict()`; client components get `t` as a prop or import `dictionaries`.
 - Colours as CSS variables in `globals.css` — off-white `#f5f2ec`, ink `#1d2433`, crimson `#9b1c2e`.
@@ -107,7 +114,12 @@ The live site uses the same emails with different random passwords — never wri
   (refuses non-TTY stdin), so the OWNER runs it — give them the command (DEPLOYMENT.md §3).
 
 ## Current status
-**All 6 phases complete + Phase 7: live on Vercel** (details and test results: docs/PLAN.md).
+**All 6 phases complete + Phase 7: live on Vercel + Phase 8: catalogue for thousands of books**
+(details and test results: docs/PLAN.md).
+- 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
+  search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
+  Migration `*_catalogue_search` (pg_trgm + indexes) must be applied to Neon (preview + main)
+  BEFORE deploying code that uses it.
 - 2026-11-15: two-step login (TOTP) live. Staff area at the fixed `/admin` (login
   `/admin/login`, linked from the public footer). The secret-path experiment (`ADMIN_PATH`)
   was removed again. Playwright 66 tests locally: 62 passed / 4 skipped.

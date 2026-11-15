@@ -75,12 +75,24 @@ export async function login(page: Page, who: Account) {
   await expect(page).toHaveURL(staffUrl());
 }
 
-/** Search from the home page using the big search bar. */
+/** Search from the home page using the big search bar → full results on /books?q=… */
 export async function search(page: Page, q: string) {
   await page.goto("/");
   await page.locator("#q").fill(q);
   await page.locator("#q").press("Enter");
-  await expect(page).toHaveURL(/[?&]q=/);
+  await expect(page).toHaveURL(/\/books\?(.*&)?q=/);
+}
+
+/**
+ * Where the catalogue filters are: the sidebar on desktop, the bottom sheet on phones
+ * (opened here). Choosing a filter is a link click either way.
+ */
+export async function filters(page: Page, isMobile: boolean) {
+  if (!isMobile) return page.locator("aside").getByTestId("filter-panel");
+  await page.getByTestId("filters-button").click();
+  const sheet = page.getByTestId("filter-sheet");
+  await expect(sheet).toBeVisible();
+  return sheet;
 }
 
 export function cardCodes(page: Page) {
