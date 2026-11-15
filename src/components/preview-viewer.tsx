@@ -60,10 +60,16 @@ export function PreviewViewer({ locale, pages, book, bookLanguage, location, ava
     return () => window.removeEventListener("keydown", onKey);
   }, [go, index]);
 
-  // Keep the active thumbnail in view
+  // Keep the active thumbnail centred in the strip. Only the strip scrolls (horizontally):
+  // scrollIntoView would also scroll the page, which on phones jumped past the title on load.
   useEffect(() => {
-    const el = thumbsRef.current?.querySelector<HTMLElement>(`[data-thumb="${index}"]`);
-    el?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    const strip = thumbsRef.current;
+    const el = strip?.querySelector<HTMLElement>(`[data-thumb="${index}"]`);
+    if (!strip || !el) return;
+    const s = strip.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const left = strip.scrollLeft + (r.left - s.left) - (s.width - r.width) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
   }, [index]);
 
   const slide = slides[index];

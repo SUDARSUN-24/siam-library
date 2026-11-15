@@ -88,3 +88,13 @@ test("book page fits a phone screen (no sideways scrolling)", async ({ page, isM
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("phone: book page opens at the top with the title visible", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "phone-only check");
+  await page.goto("/book/A-001");
+  await expect(page.getByTestId("preview-viewer")).toBeVisible();
+  // give the viewer's effects (thumbnail strip centring, smooth scroll) time to run
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.getByTestId("book-title")).toBeInViewport();
+});
