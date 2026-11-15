@@ -17,69 +17,29 @@ connected: push to `main` = production deploy, other branches = preview deploys 
 branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
 
 ## Tech stack
-- Next.js 16 (App Router, Turbopack, `src/` dir) + React 19 + TypeScript
-- Tailwind CSS v4 + shadcn/ui (radix-nova style, lucide icons; `cn` from the `cn` package)
-- PostgreSQL + Prisma 7 (`prisma-client` generator, `@prisma/adapter-pg` driver adapter)
-- Auth.js v5 (`next-auth@5 beta`) — Credentials provider, JWT session (8 h), bcrypt (`bcryptjs`)
-- sharp (verify + resize + WebP), `qrcode` (SVG QR codes), zod (validation)
-- Playwright (end-to-end tests, desktop Chrome + Pixel 7)
+(Libraries and versions: see `package.json`.) `cn` comes from the `cn` package, not a local util.
 - **Hosting: Vercel** (project `siam-library`, functions in `sin1` via `vercel.json`),
   **Neon** Postgres project `siam-library-db-sg` (`ap-southeast-1`, via Vercel Marketplace;
   branch `main` = Production, branch `preview` = Preview env only), **Vercel Blob** private
   stores `siam-library-photos` (Production) and `siam-library-photos-preview` (Preview)
-- Docker + docker-compose (app + postgres) — alternative for a university server
-- Local dev database: `embedded-postgres` (real PostgreSQL from npm — no install, no Docker)
 
-## Folder structure
-```
-prisma/                    schema.prisma, migrations/, seed.ts, seed-data.ts (18 books)
-scripts/dev-db.ts          local PostgreSQL on port 5433 (UTF-8), data in .pgdata/
-scripts/create-user.ts     create staff account / reset password (asks for password)
-src/auth.ts                Auth.js config (login, rate limit, role in JWT)
-src/proxy.ts               per-request CSP nonce + cookie-only /admin redirect
-src/app/
-  (site)/                  public: page.tsx (home), book/[code], shelf/[code]
-  admin/login/             login page + action
-  admin/(panel)/           staff pages (layout calls requireStaff): books, books/new,
-                           books/[id], qr
-  admin/actions.ts         staff Server Actions (toggle, save, delete, pages)
-  actions/locale.ts        language toggle
-  api/admin/books/[id]/pages   photo upload (one file per POST)
-  api/uploads/[file]       serves photos from storage — disk or private Blob (access-checked)
-  api/auth/[...nextauth]   Auth.js
-src/components/            book-cover, preview-viewer, page-text, admin/*, ui/ (shadcn)
-src/lib/                   db, auth-session (guards), access (PREVIEW_ACCESS), validation,
-                           dict (all strings), i18n (locale cookie), books (queries),
-                           config, qr, uploads (sharp), storage (disk | Vercel Blob),
-                           rate-limit (DB table LoginThrottle), admin-data
-tests/                     Playwright specs + helpers
-uploads/                   page photos when Blob is not used (git-ignored; Docker volume)
-.vercelignore              keeps .env*, .pgdata, uploads out of `vercel deploy` (root-anchored!)
-docs/                      PLAN.md, DEPLOYMENT.md, STAFF_GUIDE.md;  REPORT.md at root
-```
+`.vercelignore` keeps `.env*`, `.pgdata`, `uploads` out of `vercel deploy` — its patterns are
+root-anchored (`/uploads/`, not `uploads/` — that would also drop `src/app/api/uploads/`).
 
 ## Commands (Windows PowerShell)
 ```powershell
-npm install                 # install dependencies (runs prisma generate)
 npm run db:start            # start local PostgreSQL (keep this window open)
 npm run db:migrate          # create/apply migrations (dev)
 npm run db:seed             # 18 demo books + demo logins (re-runnable)
-npm run dev                 # http://localhost:3000
 npm run build               # production build (must pass after every change)
 npm run lint                # ESLint (next build no longer lints)
 npm run test:e2e            # Playwright (needs db running + seeded; reuses :3000)
 npm run user:create -- <email> <name> <ADMIN|STAFF>
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
-
-# Vercel (CLI is installed globally and logged in; project already linked in .vercel/)
 git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
-vercel logs --environment production --since 15m
-vercel env pull <file OUTSIDE the repo> --environment production --yes   # never into .env.local
-npm run db:deploy              # with DATABASE_URL(_UNPOOLED) from Neon loaded → migrate live DB
-$env:E2E_BASE_URL="https://siam-library.vercel.app"; npm run test:e2e   # + SEED_* = live logins
-# Neon CLI (`neon`, signed in): always pass the org/project
-neon branches list --org-id org-noisy-wave-22191063 --project-id cool-poetry-70535299
 ```
+Live-site operations (logs, env pull, migrating the live DB, E2E against live, Neon CLI): the
+`live-ops` skill. `vercel env pull` only ever to a file OUTSIDE the repo — never into `.env.local`.
 Commits must be authored by the GitHub account that owns the Vercel project (SUDARSUN-24),
 or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.
 Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
@@ -135,13 +95,7 @@ The live site uses the same emails with different random passwords — never wri
 - Never log passwords or session tokens.
 
 ## Current status
-**All 6 phases complete + Phase 7: live on Vercel** (see docs/PLAN.md).
-- Live: https://siam-library.vercel.app — Playwright against it (2026-11-15): 55 passed, 3 skipped.
-- Student pages, staff admin, uploads, QR sheet, Thai/English, security headers done.
-- Playwright: 58 tests (29 × desktop + mobile) → 55 passed, 3 skipped by design; repeatable.
-- GitHub auto-deploy verified (commit 26ffa17 deployed itself); preview deploys use the
-  Neon `preview` branch (verified) and the preview Blob store.
-- Docs: DEPLOYMENT.md, STAFF_GUIDE.md, REPORT.md written.
+**All 6 phases complete + Phase 7: live on Vercel** (details and test results: docs/PLAN.md).
 
 Known gaps / not verified:
 - Docker images were never built or run (Docker not installed on the dev PC).
