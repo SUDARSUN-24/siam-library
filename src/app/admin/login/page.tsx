@@ -3,14 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { LanguageToggle, LibraryMark } from "@/components/site-header";
-import { getStaffUser } from "@/lib/auth-session";
+import { staffHref } from "@/lib/admin-path";
+import { hasStaffSession } from "@/lib/auth-session";
 import { getDict } from "@/lib/i18n";
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Staff login", robots: { index: false } };
+export const metadata: Metadata = { title: "Staff login", robots: { index: false, follow: false } };
 
 export default async function LoginPage() {
-  if (await getStaffUser()) redirect("/admin");
+  if (await hasStaffSession()) redirect(staffHref());
   const { locale, t } = await getDict();
 
   return (

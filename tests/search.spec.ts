@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { cardCodes, search, useEnglish } from "./helpers";
+import { cardCodes, search, setEnglish } from "./helpers";
 
-test.beforeEach(async ({ context, baseURL }) => useEnglish(context, baseURL!));
+test.beforeEach(async ({ context, baseURL }) => setEnglish(context, baseURL!));
 
 test("home shows all 18 books and 3 shelves", async ({ page }) => {
   await page.goto("/");

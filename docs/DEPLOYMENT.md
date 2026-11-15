@@ -24,6 +24,9 @@ npm run db:seed                    # 18 demo books + demo logins (safe to re-run
 npm run dev                        # http://localhost:3000
 ```
 
+The staff area is at the secret path in `ADMIN_PATH` (in `.env`), e.g.
+`http://localhost:3000/staff-…/login` — **not** `/admin`, which is a 404 by design (§9).
+
 Production-mode build on your PC: `npm run build` then `npm start`.
 
 To try the site on a phone on the same Wi-Fi, open `http://<your-PC-IP>:3000`
@@ -45,12 +48,14 @@ npm run test:e2e                   # needs db:start running and the seed loaded
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `library` / *strong password* / `siam_library` | Database account created by docker-compose |
 | `AUTH_SECRET` | 32+ random characters | Signs staff login sessions. Generate: `npx auth secret` |
 | `AUTH_TRUST_HOST` | `true` | Needed behind Docker / a reverse proxy |
+| `ADMIN_PATH` | `/staff-` + 32 random hex characters | **Secret** path of the staff area (§9). Lowercase letters, digits, dashes, at least 16 characters after the slash; unset or invalid → staff area switched off (404). Generate: `node -e "console.log('/staff-' + require('crypto').randomBytes(16).toString('hex'))"` |
 | `NEXT_PUBLIC_SITE_URL` | `https://library.siam.edu` | Address printed inside QR codes; also turns on HSTS / secure cookies when `https://`. **Set before printing stickers.** `NEXT_PUBLIC_*` values are baked in at build time — after changing it, rebuild (Docker) or redeploy (Vercel) |
 | `PREVIEW_ACCESS` | `public` | `public` = anyone can read previews; `students` = signed-in users only (see §7) |
 | `UPLOAD_DIR` | `./uploads` | Folder for page photos (outside `public/`) when Blob is not used |
 | `BLOB_READ_WRITE_TOKEN` | *(Vercel only)* | When set, page photos go to the **private** Vercel Blob store instead of `UPLOAD_DIR` |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | | Only used by `npm run db:seed` |
 | `SEED_STAFF_EMAIL` / `SEED_STAFF_PASSWORD` | | Only used by `npm run db:seed` |
+| `SEED_ADMIN_TOTP_SECRET` | base32 | **Local / test only.** The seed turns on two-step login for the demo admin with this secret so Playwright can make codes. Never set it on a real server |
 
 `.env` and `.env.local` are git-ignored (and excluded from `vercel deploy` by `.vercelignore`).
 Never commit real secrets.
@@ -102,6 +107,7 @@ Set in Vercel → Project → Settings → Environment Variables (Production):
 | `AUTH_TRUST_HOST` | `true` |
 | `PREVIEW_ACCESS` | `public` |
 | `NEXT_PUBLIC_SITE_URL` | `https://siam-library.vercel.app` |
+| `ADMIN_PATH` | secret random path (sensitive) — **not written in any file**; ask the project owner |
 
 ### Preview environment variables
 Preview deployments get **their own** values, so they never touch production data:
@@ -113,6 +119,7 @@ Preview deployments get **their own** values, so they never touch production dat
 | `AUTH_SECRET` | its own random value (sensitive) — production sessions are not valid on previews |
 | `AUTH_TRUST_HOST`, `PREVIEW_ACCESS` | `true`, `public` |
 | `NEXT_PUBLIC_SITE_URL` | `https://siam-library.vercel.app` (QR codes always point to the live site) |
+| `ADMIN_PATH` | its **own** secret value (sensitive), different from production |
 
 The Neon integration's own `PG*` / `POSTGRES_*` variables exist for Production only. How
 the preview branch was made (Neon CLI, `npm i -g neonctl`, command `neon`):
@@ -182,8 +189,12 @@ vercel logs --environment production --since 15m    # runtime errors
 $env:E2E_BASE_URL="https://siam-library.vercel.app"
 $env:SEED_ADMIN_EMAIL="admin@library.siam.edu"; $env:SEED_ADMIN_PASSWORD="<live admin password>"
 $env:SEED_STAFF_EMAIL="staff@library.siam.edu"; $env:SEED_STAFF_PASSWORD="<live staff password>"
+$env:E2E_ADMIN_PATH="<the live ADMIN_PATH>"     # the local .env value is not used
 npm run test:e2e       # no local server is started when E2E_BASE_URL is set
 ```
+If the live admin has two-step login on, the admin-only tests need its TOTP secret in
+`SEED_ADMIN_TOTP_SECRET`; without it they are **skipped** (they cannot read your phone).
+The 2FA test turns two-step login on for the **staff** account and off again at the end.
 The tests restore what they change (book A-002 borrowed → returned; the test book and its
 photos are deleted). If a run fails half-way, check the admin list for a leftover
 "Playwright Test Novel" and delete it (ADMIN account), or the QR/home counts will be off.
@@ -278,7 +289,9 @@ Restore: `cat backup.sql | docker compose exec -T db psql -U library siam_librar
 These come from `SEED_*` in `.env`. **Change them (or don't seed) on a public server.**
 They do **not** work on the live Vercel site, which was seeded with different, randomly
 generated passwords (not written in any file — ask the project owner).
-Admin can do everything Staff can, plus delete books.
+Admin can do everything Staff can, plus delete books. Locally the demo admin also needs a
+two-step code: add `SEED_ADMIN_TOTP_SECRET` (from `.env`) to an authenticator app as a setup
+key, or leave that variable unset before seeding and set 2FA up on first login.
 
 ## 7. Switching previews to students-only
 Set `PREVIEW_ACCESS=students` and restart (Vercel: change the variable and redeploy). The book page then shows a lock message and
@@ -288,9 +301,42 @@ in, add a student login (e.g. university SSO through another Auth.js provider) �
 code needs to change.
 
 ## 8. Notes and limits
+- Two-step login codes have their own limit: **5 wrong codes per account** (and 20 per IP)
+  in 15 minutes, separate from the password limits. The 2FA settings page has its own
+  bucket, so wrong codes at the login form cannot lock the owner out of their settings.
 - The login rate limiter stores its counters in the database (`LoginThrottle` table), so
   it holds across Vercel's serverless instances and app restarts. Expired rows are cleaned
   up automatically.
 - IP-based limits rely on `X-Forwarded-For`. Vercel sets this header itself (clients
   cannot forge it there); behind your own nginx it depends on the proxy. The per-email
   limit (10 failures / 15 min) is the real brute-force protection either way.
+
+## 9. Secret staff path and two-step login
+
+**Secret path.** There is no `/admin` URL: `src/proxy.ts` answers `/admin/*` with the normal
+404 page and rewrites `ADMIN_PATH/*` to the internal staff routes. No public page,
+`robots.txt`, sitemap or Auth.js redirect mentions the path, and staff pages send
+`X-Robots-Tag: noindex` plus a `noindex, nofollow` robots meta tag. This only hides the
+login form — the real protection is unchanged (server-side `requireStaff` / `assertStaff`
+/ `getStaffUser` on every page, action and API route).
+
+To change the path (e.g. it leaked): set a new `ADMIN_PATH`, redeploy, and give staff the
+new link. On Vercel:
+```powershell
+vercel env rm ADMIN_PATH production --yes
+node -e "process.stdout.write('/staff-' + require('crypto').randomBytes(16).toString('hex'))" | vercel env add ADMIN_PATH production --sensitive
+vercel --prod     # or push a commit — env changes apply to NEW deployments only
+```
+
+**Two-step login (TOTP).** Staff use Google / Microsoft Authenticator (6-digit codes,
+RFC 6238). Required for ADMIN accounts — an admin without it can open only the setup page —
+optional for STAFF. Secrets are stored AES-256-GCM encrypted with a key derived from
+`AUTH_SECRET`, so **changing `AUTH_SECRET` breaks 2FA for everyone**: run the reset below
+for each account. The 8 one-time backup codes are stored as SHA-256 hashes; a code is
+accepted once (replay protection).
+
+Lost phone and no backup codes left:
+```powershell
+npm run user:reset-2fa -- admin@library.siam.edu     # with DATABASE_URL loaded as in §3
+```
+The account then signs in with the password only (an admin is sent to set it up again).

@@ -35,7 +35,17 @@ export type SearchFilters = z.infer<typeof searchParamsSchema>;
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   password: z.string().min(1).max(200),
+  /** Two-step login: 6-digit app code or a backup code (only sent on the second step). */
+  code: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .transform((v) => (v ? v : undefined)),
 });
+
+/** A 6-digit authenticator code (setup / turning 2FA off). */
+export const totpCodeSchema = z.string().trim().regex(/^\d{6}$/);
 
 /** ISBN-10 or ISBN-13, hyphens/spaces allowed. */
 const isbnSchema = z

@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { books, shelves, type SeedBook } from "./seed-data";
+import { base32Decode, encryptSecret } from "../src/lib/totp";
 
 const db = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -116,6 +117,18 @@ async function main() {
       update: { passwordHash, role: a.role, name: a.name },
       create: { email: a.email.toLowerCase(), passwordHash, role: a.role, name: a.name },
     });
+  }
+
+  // LOCAL / TEST ONLY: give the demo admin a known two-step-login secret so the Playwright
+  // tests can produce codes. Opt-in — never set SEED_ADMIN_TOTP_SECRET for a real server.
+  const demoSecret = process.env.SEED_ADMIN_TOTP_SECRET?.trim().toUpperCase();
+  if (demoSecret) {
+    base32Decode(demoSecret); // throws on a malformed secret
+    await db.user.update({
+      where: { email: process.env.SEED_ADMIN_EMAIL!.toLowerCase() },
+      data: { totpSecret: encryptSecret(demoSecret), totpPendingSecret: null, totpEnabledAt: new Date(), totpLastStep: null },
+    });
+    console.log("Demo admin: two-step login ON with SEED_ADMIN_TOTP_SECRET (local only).");
   }
 
   const [s, bk, p, u] = await Promise.all([db.shelf.count(), db.book.count(), db.previewPage.count(), db.user.count()]);

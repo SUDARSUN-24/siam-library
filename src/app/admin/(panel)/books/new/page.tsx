@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { staffHref } from "@/lib/admin-path";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { BookForm } from "@/components/admin/book-form";
 import { getBookFormData } from "@/lib/admin-data";
@@ -8,7 +9,7 @@ export default async function NewBookPage() {
   const [{ locale, t }, data] = await Promise.all([getDict(), getBookFormData()]);
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <Link href="/admin" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+      <Link href={staffHref()} prefetch={false} className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
         <ArrowLeft className="size-4" aria-hidden="true" />
         {t.adminBooks}
       </Link>

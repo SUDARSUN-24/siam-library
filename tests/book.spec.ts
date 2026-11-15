@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { useEnglish } from "./helpers";
+import { setEnglish } from "./helpers";
 
-test.beforeEach(async ({ context, baseURL }) => useEnglish(context, baseURL!));
+test.beforeEach(async ({ context, baseURL }) => setEnglish(context, baseURL!));
 
 test("open a book from the home page", async ({ page }) => {
   await page.goto("/");

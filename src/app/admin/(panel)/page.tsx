@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { staffHref } from "@/lib/admin-path";
 import { Eye, Pencil, Plus, Search } from "lucide-react";
 import { toggleBookStatus } from "@/app/admin/actions";
 import { SubmitButton } from "@/components/admin/submit-button";
@@ -32,7 +33,7 @@ export default async function AdminBooksPage({ searchParams }: PageProps<"/admin
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/books/new">
+          <Link href={staffHref("/books/new")} prefetch={false}>
             <Plus className="size-4" aria-hidden="true" />
             {t.adminAddBook}
           </Link>
@@ -83,7 +84,7 @@ export default async function AdminBooksPage({ searchParams }: PageProps<"/admin
                   </SubmitButton>
                 </form>
                 <Button asChild variant="ghost" size="icon" className="size-10" aria-label={`${t.adminEdit} ${b.code}`}>
-                  <Link href={`/admin/books/${b.id}`}>
+                  <Link href={staffHref(`/books/${b.id}`)} prefetch={false}>
                     <Pencil className="size-4" />
                   </Link>
                 </Button>

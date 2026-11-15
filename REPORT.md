@@ -26,8 +26,9 @@ The system is built with Next.js 16, TypeScript, PostgreSQL and Prisma, uses Aut
 staff login, and runs online on **Vercel** with a Neon PostgreSQL database and private
 Vercel Blob photo storage (https://siam-library.vercel.app); a Docker setup remains for a
 university server. Security controls
-include server-side role checks, input validation with zod, login rate limiting, a
-nonce-based Content Security Policy and verified image uploads. Fifty-six automated
+include server-side role checks, a staff area hidden behind a secret path, two-step login
+(authenticator-app codes, required for the admin), input validation with zod, login rate
+limiting, a nonce-based Content Security Policy and verified image uploads. Fifty-six automated
 end-to-end tests on desktop and mobile browsers cover search, reading, page turning,
 staff login and adding books; 53 pass and 3 are skipped by design, both locally and
 against the live site.
@@ -88,7 +89,7 @@ flowchart LR
     T[Staff phone / PC]
   end
   subgraph Vercel["Vercel (serverless, sin1 Singapore)"]
-    P["Proxy<br/>CSP nonce, /admin redirect"]
+    P["Proxy<br/>CSP nonce, secret staff path, /admin = 404"]
     N["Next.js 16 app<br/>Server Components + Server Actions"]
   end
   U[("Vercel Blob (private)<br/>WebP page photos")]
@@ -227,7 +228,7 @@ src/app/admin/     staff pages: login, books, add/edit, QR sheet; Server Actions
 src/app/api/       photo upload, photo serving, Auth.js endpoints
 src/components/    cover generator, preview viewer, page renderer, admin UI
 src/lib/           db, auth guards, access rule, validation, i18n, QR, uploads, rate limit
-src/proxy.ts       per-request CSP nonce + /admin redirect
+src/proxy.ts       per-request CSP nonce + secret staff path (ADMIN_PATH → /admin, /admin → 404)
 tests/             Playwright end-to-end tests
 ```
 
@@ -328,6 +329,8 @@ Full instructions: `docs/DEPLOYMENT.md`, section 3.
 | Threat | Control |
 |---|---|
 | Unauthorised admin access | Every admin page calls `requireStaff()`, every Server Action `assertStaff()`, the upload route `getStaffUser()`. These re-read the user from the database, so a deleted account loses access immediately. The proxy redirect is only a convenience. |
+| Finding the login form | The staff area has **no public URL**: it lives at a secret path from the `ADMIN_PATH` environment variable (a long random value, different for production and preview, never committed). `/admin` and `/admin/login` return the normal 404 page; no public page, `robots.txt`, sitemap or Auth.js redirect mentions the path (Auth.js's own sign-in/error redirects point to the home page). Staff pages are `noindex, nofollow` (meta tag **and** `X-Robots-Tag` header) and `Cache-Control: private, no-store`. This is defence in depth — bots and curious visitors never see a login form — not a replacement for the server-side checks above. |
+| Stolen or guessed password | **Two-step login (TOTP, RFC 6238)** with Google / Microsoft Authenticator: after the password, a 6-digit code from the phone is required. **Required for ADMIN** (an admin without it gets a session that can open *only* the setup page — every other page, action and the upload API refuse it); optional for STAFF. The secret is shown once as a QR code and stored **AES-256-GCM encrypted** (key derived from `AUTH_SECRET`). Each code is accepted only once (the last used 30-second step is stored, updated atomically). 8 one-time **backup codes** (SHA-256 hashed) cover a lost phone; `npm run user:reset-2fa` is the last resort. Wrong codes are **rate-limited** separately from passwords: 5 per account and 20 per IP in 15 minutes, in the database. |
 | Privilege escalation | Deleting books requires the ADMIN role, checked on the server; the button is also hidden from STAFF. |
 | Password guessing | bcrypt (cost 12); 5 failures per email+IP and 10 per email (any IP) in 15 minutes, then a lock-out message (counters stored in the database, so the limit holds across serverless instances); unknown emails take the same time as wrong passwords, so accounts cannot be discovered. |
 | Invalid / malicious input | zod schemas on every form, URL parameter and API input; bad search parameters are ignored, not errors. Prisma uses parameterised queries (no SQL injection). |
@@ -360,8 +363,10 @@ violations, and the QR sheet in print mode.
 |---|---|---|
 | Search (10) | title, Thai title, author, ISBN with hyphens, words inside the preview, no-results message, shelf & availability filters, auto-submitting filter, Thai default + language toggle | correct books returned, UI language switches |
 | Book & viewer (7) | open book from home, due date for borrowed book, 404 for unknown code, shelf page rows, page flipping (buttons, arrow keys, thumbnails, end page, back to cover), **swipe on phone**, **no sideways scroll on phone** | location text, page counter, end page content |
-| Staff (8) | /admin requires login, **book-form errors in Thai and English**, wrong password, **rate limit after 5 failures**, mark borrowed → public page shows due date → mark returned, STAFF cannot delete, **add book → upload 2 photos (fake image rejected) → public viewer shows them → reorder → delete**, QR sheet lists 3 shelves + 18 books | full staff workflow |
+| Staff (8) | staff pages require login, **book-form errors in Thai and English**, wrong password, **rate limit after 5 failures**, mark borrowed → public page shows due date → mark returned, STAFF cannot delete, **add book → upload 2 photos (fake image rejected) → public viewer shows them → reorder → delete**, QR sheet lists 3 shelves + 18 books | full staff workflow |
 | Security (4) | security headers + CSP nonce, upload API refuses anonymous users (401), image route rejects traversal / wrong names, malformed search parameters | defensive behaviour |
+| Hidden staff area (4) | `/admin`, `/admin/login` (also `/Admin`, `/%61dmin`) are 404; home, book, shelf, 404 page, `robots.txt`, `sitemap.xml` never contain the secret path or an `/admin` link; Auth.js sign-in/error redirects do not reveal it; staff pages are `noindex` (header + meta) | secret path stays secret |
+| Two-step login (2) | admin cannot reach the books list with a password only (code required, wrong code refused — or, if not set up yet, every staff page redirects to the setup page and the upload API returns 401); **staff turns 2FA on (QR + key, wrong first code refused, 8 backup codes) → password alone is not enough → wrong code refused → right code works → backup code works once → 5 wrong codes lock the code step (even a right code is then refused) → turns it off** | full 2FA lifecycle, replay and rate limit |
 
 Skipped by design: swipe and phone-width tests on desktop; the add-book test on mobile
 (it creates and deletes data, so it runs once).

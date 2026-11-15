@@ -1,22 +1,24 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { ADMIN, login, STAFF, useEnglish } from "./helpers";
+import { ADMIN, login, STAFF, staff, staffUrl, setEnglish } from "./helpers";
 
-test.beforeEach(async ({ context, baseURL }) => useEnglish(context, baseURL!));
+test.beforeEach(async ({ context, baseURL }) => setEnglish(context, baseURL!));
 
 /** Failed-login tests get their own client IP so their failures never block other tests' logins. */
 const isolatedIp = () => ({ "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 250) + 1}` });
 
-test("admin pages require login", async ({ page }) => {
-  await page.goto("/admin");
-  await expect(page).toHaveURL(/\/admin\/login$/);
-  await page.goto("/admin/qr");
-  await expect(page).toHaveURL(/\/admin\/login$/);
+test("staff pages require login", async ({ page }) => {
+  await page.goto(staff());
+  await expect(page).toHaveURL(staffUrl("/login"));
+  await page.goto(staff("/qr"));
+  await expect(page).toHaveURL(staffUrl("/login"));
+  await page.goto(staff("/security"));
+  await expect(page).toHaveURL(staffUrl("/login"));
 });
 
 test("wrong password is rejected", async ({ page }) => {
   await page.context().setExtraHTTPHeaders(isolatedIp());
-  await page.goto("/admin/login");
+  await page.goto(staff("/login"));
   await page.getByLabel("Email").fill(`wrong-pw-${Date.now()}@example.com`);
   await page.getByLabel("Password").fill("not-the-password");
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -26,13 +28,13 @@ test("wrong password is rejected", async ({ page }) => {
 test("login is rate-limited after 5 failed attempts", async ({ page }) => {
   const email = `nobody-${Date.now()}@example.com`; // own bucket, does not lock real accounts
   await page.context().setExtraHTTPHeaders(isolatedIp());
-  await page.goto("/admin/login");
+  await page.goto(staff("/login"));
   for (let i = 0; i < 6; i++) {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill("wrong");
     // wait for the server's answer before the next attempt
     await Promise.all([
-      page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/admin/login")),
+      page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith(staff("/login"))),
       page.getByRole("button", { name: "Sign in" }).click(),
     ]);
     await expect(page.getByTestId("login-error")).toBeVisible();
@@ -71,7 +73,7 @@ test("add a book with photo pages, see it publicly, then delete it", async ({ pa
   test.skip(isMobile, "runs once (desktop) — it creates and deletes data");
   await login(page, ADMIN);
   await page.getByRole("link", { name: "Add book" }).first().click();
-  await expect(page).toHaveURL(/\/admin\/books\/new$/);
+  await expect(page).toHaveURL(staffUrl("/books/new"));
 
   await page.getByLabel("Shelf").selectOption({ label: "C · Literature" });
   const code = await page.getByLabel("Book code").inputValue();
@@ -122,7 +124,7 @@ test("add a book with photo pages, see it publicly, then delete it", async ({ pa
   // delete the book (admin only, confirm dialog)
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Delete book" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(staffUrl());
   await expect(page.getByTestId(`admin-row-${code}`)).toHaveCount(0);
   const gone = await page.request.get(`/book/${code}`);
   expect(gone.status()).toBe(404);
@@ -130,7 +132,7 @@ test("add a book with photo pages, see it publicly, then delete it", async ({ pa
 
 test("QR sticker sheet lists every book and shelf", async ({ page }) => {
   await login(page, STAFF);
-  await page.goto("/admin/qr");
+  await page.goto(staff("/qr"));
   await expect(page.getByTestId("qr-shelf")).toHaveCount(3);
   await expect(page.getByTestId("qr-book")).toHaveCount(18);
   await expect(page.getByTestId("qr-book").first().locator("svg")).toBeVisible();
@@ -139,7 +141,7 @@ test("QR sticker sheet lists every book and shelf", async ({ page }) => {
 test("book form errors are shown in the UI language (Thai and English)", async ({ page, context, baseURL }) => {
   await login(page, STAFF);
   const submitInvalid = async () => {
-    await page.goto("/admin/books/new");
+    await page.goto(staff("/books/new"));
     await page.locator("#code").fill("bad code");
     await page.locator("#title").fill("Validation test");
     await page.locator("#author").fill(""); // required, left empty
@@ -162,5 +164,5 @@ test("book form errors are shown in the UI language (Thai and English)", async (
   await expect(page.getByText("Use a code like A-001", { exact: false })).toBeVisible();
   await expect(page.getByText("This field is required.")).toBeVisible();
   await expect(page.getByText("ISBN must be 10 or 13 digits.")).toBeVisible();
-  await expect(page).toHaveURL(/\/admin\/books\/new$/); // nothing was saved
+  await expect(page).toHaveURL(staffUrl("/books/new")); // nothing was saved
 });

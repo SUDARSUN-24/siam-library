@@ -84,6 +84,25 @@ model User {
   role         Role     @default(STAFF)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Two-step login (TOTP, src/lib/totp.ts). Secrets are stored AES-256-GCM encrypted.
+  totpSecret        String? // active secret, set when 2FA is turned on
+  totpPendingSecret String? // secret shown on the setup page, until the first code confirms it
+  totpEnabledAt     DateTime?
+  totpLastStep      Int? // last accepted 30-second step — a code can be used only once
+  backupCodes       BackupCode[]
+}
+
+/// One-time backup codes for two-step login (SHA-256 hashes, never the codes themselves).
+model BackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, codeHash])
 }
 
 /// Failed-login counters for the rate limiter (one row per key, fixed window).

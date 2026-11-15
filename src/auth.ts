@@ -13,9 +13,17 @@ import {
   recordFailure,
   resetLimit,
 } from "@/lib/rate-limit";
+import { verifySecondFactor } from "@/lib/two-factor";
 
 class RateLimited extends CredentialsSignin {
   code = "rate_limited";
+}
+/** Password was right; the account has 2FA on and no code was sent yet. */
+class CodeRequired extends CredentialsSignin {
+  code = "code_required";
+}
+class CodeInvalid extends CredentialsSignin {
+  code = "code_invalid";
 }
 
 // Compared against when the email does not exist, so response time does not reveal valid accounts.
@@ -24,15 +32,17 @@ const getDummyHash = () => (dummyHash ??= bcrypt.hash("no-such-user-password", 1
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 }, // one working day
-  pages: { signIn: "/admin/login" },
+  // Auth.js redirects GET /api/auth/signin (and errors) to these pages. They point to the
+  // home page on purpose: pointing them at the staff login would reveal the secret ADMIN_PATH.
+  pages: { signIn: "/", error: "/" },
   trustHost: true,
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { email: {}, password: {}, code: {} },
       async authorize(raw, request) {
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) return null;
-        const { email, password } = parsed.data;
+        const { email, password, code } = parsed.data;
 
         // Only FAILED attempts count, so staff sharing the library network don't lock each other out.
         const ip = clientIp(request.headers);
@@ -54,6 +64,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         await Promise.all([resetLimit(ipAcctKey), resetLimit(acctKey)]);
+
+        // Second step: accounts with 2FA on also need a code from the authenticator app
+        // (or a backup code). Wrong codes have their own rate limit (src/lib/two-factor.ts).
+        if (user.totpEnabledAt) {
+          if (!code) throw new CodeRequired();
+          const result = await verifySecondFactor(user.id, code, ip);
+          if (result === "rate_limited") throw new RateLimited();
+          if (result !== "ok") throw new CodeInvalid();
+        }
+        // ADMIN accounts without 2FA yet get a session that can ONLY open the setup page
+        // (requireStaff / getStaffUser / assertStaff refuse everything else until it is on).
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

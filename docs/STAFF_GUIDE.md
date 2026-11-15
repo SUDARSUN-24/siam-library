@@ -6,11 +6,16 @@ Simple steps for library staff. Works on a computer or a phone.
 ---
 
 ## 1. Log in · เข้าสู่ระบบ
-1. Open the website and tap **Staff / เจ้าหน้าที่** at the bottom of any page
-   (or go straight to `/admin`).
+1. Open the **secret staff link** that IT gave you and **bookmark it**. The public site
+   has no staff link, and `/admin` does not exist (it shows “page not found”).
+   Do not share the link or post it anywhere. If you lose it, ask IT.
+   เปิด **ลิงก์ลับสำหรับเจ้าหน้าที่** ที่ได้รับจากฝ่ายไอทีแล้วบันทึกเป็นบุ๊กมาร์ก ห้ามเผยแพร่ลิงก์นี้
 2. Enter your email and password, then **Sign in / เข้าสู่ระบบ**.
-3. After 5 wrong passwords the login is locked for 15 minutes — wait, then try again.
-4. You stay signed in for 8 hours. Tap **Sign out / ออกจากระบบ** on shared computers.
+3. If two-step login is on (always for **Admin**), enter the **6-digit code** from the
+   authenticator app on your phone, then **Verify / ยืนยัน**. See section 7.
+4. After 5 wrong passwords — or 5 wrong codes — the login is locked for 15 minutes.
+   Wait, then try again.
+5. You stay signed in for 8 hours. Tap **Sign out / ออกจากระบบ** on shared computers.
 
 Use the **ภาษาไทย / English** button at the top to change language at any time.
 
@@ -60,6 +65,29 @@ Limits: up to **10 pages** per book, images only, max **10 MB** per photo.
 ## 6. Delete a book (Admin only) · ลบหนังสือ (ผู้ดูแลระบบ)
 Open the book → **Delete book / ลบหนังสือ** at the bottom → confirm. This removes the
 book and all its photos and cannot be undone. Staff accounts do not see this button.
+
+## 7. Two-step login · การยืนยันตัวตนสองขั้นตอน
+A code from your phone is needed as well as the password, so a stolen password alone
+cannot open your account. **Required for Admin accounts**, optional (but recommended)
+for Staff. เมื่อเปิดใช้ ต้องกรอกรหัสจากโทรศัพท์ทุกครั้งที่เข้าสู่ระบบ บัญชีผู้ดูแลระบบต้องเปิดใช้
+
+**Set up (once):**
+1. Install **Google Authenticator** or **Microsoft Authenticator** on your phone.
+2. Sign in. Admin accounts go straight to the setup page; Staff tap
+   **Two-step login / ยืนยันสองขั้นตอน** in the menu.
+3. In the app tap **+** → *Scan a QR code* and scan the code on the screen.
+   (Cannot scan? Choose *Enter a setup key* and type the key shown under the QR code.)
+4. Type the 6-digit code the app shows and tap **Turn on two-step login**.
+5. **8 backup codes** appear — shown only once. Write them down or print them and keep
+   them somewhere safe (not on the same phone). Each one works once if you lose your phone.
+6. Tap **I have saved my codes — continue**.
+
+**Every login:** password → open the app → type the current 6-digit code (it changes every
+30 seconds; each code works only once).
+
+**New phone / lost phone:** sign in with a **backup code** in the code box, then on the
+**Two-step login** page you can make new backup codes. If you have no backup codes left,
+ask IT to reset it (`npm run user:reset-2fa -- <email>`), then set it up again.
 
 ## Need help?
 Contact the library IT administrator. New staff accounts and password resets are done

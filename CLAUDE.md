@@ -35,6 +35,7 @@ npm run build               # production build (must pass after every change)
 npm run lint                # ESLint (next build no longer lints)
 npm run test:e2e            # Playwright (needs db running + seeded; reuses :3000)
 npm run user:create -- <email> <name> <ADMIN|STAFF>
+npm run user:reset-2fa -- <email>   # lost phone: turns two-step login off for that account
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
 git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
 ```
@@ -43,7 +44,10 @@ Live-site operations (logs, env pull, migrating the live DB, E2E against live, N
 Commits must be authored by the GitHub account that owns the Vercel project (SUDARSUN-24),
 or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.
 Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
-The live site uses the same emails with different random passwords — never write those into a file.
+Local admin also needs a code: seed sets its 2FA secret from `SEED_ADMIN_TOTP_SECRET` (.env, local only).
+The live site uses the same emails with different random passwords and its own `ADMIN_PATH`
+— never write those (or any 2FA secret) into a file.
+Playwright: local runs read `ADMIN_PATH` from .env; live runs need `E2E_ADMIN_PATH`.
 
 ## Coding rules
 - Next 16: `params` / `searchParams` are Promises — always `await` them. Middleware is `src/proxy.ts`.
@@ -75,6 +79,16 @@ The live site uses the same emails with different random passwords — never wri
 - Every admin page calls `requireStaff()` / `requireAdmin()`; every Server Action calls
   `assertStaff()` (ADMIN-only actions: `assertStaff("ADMIN")`); route handlers use
   `getStaffUser()`. These re-read the user from the DB. The proxy redirect is NOT security.
+- **Secret staff path**: the staff area is served ONLY at `ADMIN_PATH` (env, src/lib/admin-path.ts);
+  src/proxy.ts rewrites `ADMIN_PATH/*` → internal `/admin/*` and returns 404 for `/admin/*`.
+  Staff links/redirects use `staffHref()` (+ `prefetch={false}` on `<Link>`: prefetches skip
+  the proxy). Never put the path in public pages, robots/sitemap, client bundles, tests or
+  any committed file; never point Auth.js `pages` at it. `revalidatePath` still uses `/admin/...`.
+- **Two-step login (TOTP)** is required for ADMIN (`TWO_FACTOR_REQUIRED_ROLES`): until it is
+  on, `getStaffUser`/`assertStaff` refuse and `requireStaff` redirects to `ADMIN_PATH/security`
+  (the only page allowed, via `requireStaffForSecurity`). Code check + its rate limit live in
+  src/lib/two-factor.ts, called from `authorize()` after the password. TOTP secrets are
+  encrypted with a key from `AUTH_SECRET` (src/lib/totp.ts).
 - Validate every input with zod (`src/lib/validation.ts`) before touching the DB.
 - Login rate limit (in `authorize()`, failures only, 15 min): 5 per email+IP, 10 per email
   (any IP — cannot be bypassed by forging X-Forwarded-For), 50 per IP. Stored in the
