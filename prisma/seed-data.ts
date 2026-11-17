@@ -25,9 +25,9 @@ export type SeedBook = {
 };
 
 export const shelves: SeedShelf[] = [
-  { code: "A", nameEn: "Information Technology", nameTh: "เทคโนโลยีสารสนเทศ", color: "#284a7a" },
-  { code: "B", nameEn: "Business & Management", nameTh: "บริหารธุรกิจ", color: "#7a4a14" },
-  { code: "C", nameEn: "Literature", nameTh: "วรรณกรรม", color: "#6a2347" },
+  { code: "A", nameEn: "Information Technology", nameTh: "เทคโนโลยีสารสนเทศ", color: "#1f63d6" },
+  { code: "B", nameEn: "Business & Management", nameTh: "บริหารธุรกิจ", color: "#c2410c" },
+  { code: "C", nameEn: "Literature", nameTh: "วรรณกรรม", color: "#c2185b" },
 ];
 
 export const books: SeedBook[] = [

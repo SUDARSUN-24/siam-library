@@ -12,7 +12,7 @@ type CardProps = {
   locale: Locale;
   /** from canViewPreview() */
   showPhotos: boolean;
-  /** small gold "New" badge on the cover (home: New arrivals row) */
+  /** small sun-yellow "New" badge on the cover (home: New arrivals row) */
   isNew?: boolean;
 };
 
@@ -33,7 +33,7 @@ export function BookCard({ book, t, locale, showPhotos, isNew }: CardProps) {
           imageUrl={photo ? `/api/uploads/${photo}` : null}
         />
         {isNew && (
-          <span className="absolute top-2 right-2 rounded-sm bg-gold px-1.5 py-0.5 text-[11px] leading-none font-semibold text-navy shadow-sm">
+          <span className="absolute top-2 right-2 rounded-full bg-sun px-2 py-1 text-[11px] leading-none font-bold text-foreground shadow-sm">
             {t.badgeNew}
           </span>
         )}

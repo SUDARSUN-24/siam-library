@@ -24,9 +24,9 @@ export default async function BooksPage({ searchParams }: PageProps<"/books">) {
 
   return (
     <>
-      <section className="border-b border-border bg-tint">
+      <section className="border-b-4 border-hue-blue/15 bg-sky-soft">
         <div className="mx-auto max-w-6xl px-4 pt-7 pb-7 sm:pt-10 sm:pb-8">
-          <h1 className="font-serif text-[1.75rem] leading-tight font-semibold sm:text-4xl" data-testid="catalogue-heading">
+          <h1 className="font-serif text-[1.75rem] leading-tight font-bold sm:text-4xl" data-testid="catalogue-heading">
             {params.q ? (
               <>
                 {t.resultsFor} <span className="text-primary">“{params.q}”</span>
@@ -35,7 +35,7 @@ export default async function BooksPage({ searchParams }: PageProps<"/books">) {
               t.catalogueTitle
             )}
           </h1>
-          <span className="mt-3 block h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,var(--crimson)_0_65%,var(--gold)_65%_100%)]" aria-hidden="true" />
+          <span className="mt-3 block h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,var(--crimson)_0_60%,var(--sun)_60%_100%)]" aria-hidden="true" />
           <div className="mt-5 max-w-2xl">
             <SearchBox t={t} action="/books" defaultValue={params.q ?? ""} hidden={keep} compact key={params.q ?? ""} />
           </div>

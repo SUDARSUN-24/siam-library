@@ -13,7 +13,7 @@ import { categoryLabel, fmt, formatDate } from "@/lib/dict";
 import { getDict } from "@/lib/i18n";
 import { bookCodeSchema } from "@/lib/validation";
 import { categoryPath } from "@/lib/catalogue";
-import { shelfInk } from "@/lib/colors";
+import { shelfInk, tint } from "@/lib/colors";
 import { BookQr } from "@/components/book-qr";
 
 async function load(params: Promise<{ code: string }>) {
@@ -65,19 +65,18 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
 
   return (
     <>
-      {/* Header strip in the shelf colour */}
-      <section className="on-dark relative overflow-hidden text-white" style={{ background: ink }}>
+      {/* Header strip: a light tint of the shelf colour */}
+      <section className="relative overflow-hidden border-b-4" style={{ background: tint(book.shelf.color), borderBottomColor: ink }}>
         <span
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-[0.07]"
+          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-[0.12]"
           style={{
-            background:
-              "repeating-linear-gradient(90deg,#fff 0 14px,transparent 14px 20px,#fff 20px 28px,transparent 28px 38px,#fff 38px 54px,transparent 54px 61px)",
-            maskImage: "linear-gradient(90deg,transparent,#000 60%)",
+            background: `repeating-linear-gradient(90deg,${ink} 0 14px,transparent 14px 20px,${ink} 20px 28px,transparent 28px 38px,${ink} 38px 54px,transparent 54px 61px)`,
+            maskImage: "linear-gradient(90deg,transparent,#000 70%)",
           }}
           aria-hidden="true"
         />
         <div className="relative mx-auto max-w-6xl px-4 pt-5 pb-8 sm:pt-7 lg:pb-10">
-          <Link href="/books" className="no-print inline-flex items-center gap-1 rounded-sm text-sm text-white/85 underline-offset-4 hover:text-white hover:underline">
+          <Link href="/books" className="no-print inline-flex items-center gap-1 rounded-sm text-sm font-medium text-muted-foreground underline-offset-4 hover:text-primary hover:underline">
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t.backToBooks}
           </Link>
@@ -92,15 +91,15 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
                   color={book.shelf.color}
                   imageUrl={firstPhoto && allowed ? uploadUrl(firstPhoto) : null}
                   priority
-                  className="ring-1 ring-white/25"
+                  className="ring-4 ring-white"
                 />
               </div>
               <div className="flex min-w-0 flex-col items-start gap-2">
-                <h1 lang={book.language} className="font-serif text-2xl leading-tight font-semibold text-balance text-white sm:text-3xl" data-testid="book-title">
+                <h1 lang={book.language} className="font-serif text-2xl leading-tight font-bold text-balance sm:text-3xl" data-testid="book-title">
                   {book.title}
                 </h1>
-                {book.altTitle && <p className="font-serif text-base text-white/85 italic">{book.altTitle}</p>}
-                <p className="text-[15px] text-white/95">{book.author}</p>
+                {book.altTitle && <p className="font-serif text-base text-muted-foreground italic">{book.altTitle}</p>}
+                <p className="text-[15px] font-medium">{book.author}</p>
                 <div className="mt-1">
                   <StatusBadge status={book.status} dueDate={book.dueDate} t={t} locale={locale} size="lg" solid />
                 </div>
@@ -127,7 +126,7 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
           <h2 id="preview-heading" className="sr-only">
             {t.previewHeading}
           </h2>
-          <div className="-mx-4 bg-viewer px-4 pt-6 pb-4 sm:mx-0 sm:mt-6 sm:rounded-2xl sm:p-6 sm:pb-4 lg:mt-0 lg:shadow-(--shadow-lift)">
+          <div className="-mx-4 bg-viewer px-4 pt-6 pb-4 sm:mx-0 sm:mt-6 sm:rounded-2xl sm:p-6 sm:pb-4 lg:mt-0 lg:shadow-(--shadow-lift) lg:ring-4 lg:ring-white">
             {!allowed ? (
               <div className="mx-auto flex aspect-[5/7] max-w-[460px] flex-col items-center justify-center gap-3 rounded-md border border-dashed border-input bg-paper p-8 text-center">
                 <Lock className="size-8 text-muted-foreground" aria-hidden="true" />

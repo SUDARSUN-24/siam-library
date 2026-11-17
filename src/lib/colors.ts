@@ -25,14 +25,27 @@ export function contrast(a: string, b: string) {
 const hex = (c: [number, number, number]) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 
 /**
- * The shelf colour as a background for WHITE text: unchanged when it already passes WCAG AA
- * (4.5:1 — true for the library's shelves A/B/C), otherwise darkened just enough.
+ * `color` as TEXT (or as a background for text in `bg`) that passes WCAG AA (4.5:1) against `bg`:
+ * unchanged when it already does, otherwise darkened just enough.
  */
-export function shelfInk(color: string) {
+export function readableOn(color: string, bg: string) {
   const base = rgb(color);
   for (let k = 0; k <= 1; k += 0.05) {
-    const c = base.map((v) => v * (1 - k)) as [number, number, number];
-    if (contrast(hex(c), "#ffffff") >= 4.5) return hex(c);
+    const c = hex(base.map((v) => v * (1 - k)) as [number, number, number]);
+    if (contrast(c, bg) >= 4.5) return c;
   }
   return "#1d2433";
+}
+
+/**
+ * The shelf colour as a background for WHITE text: unchanged when it already passes WCAG AA
+ * (true for the library's shelves A/B/C), otherwise darkened just enough.
+ */
+export function shelfInk(color: string) {
+  return readableOn(color, "#ffffff");
+}
+
+/** A light tint of a colour (mixed with white) — for bright, soft section backgrounds. */
+export function tint(color: string, amount = 0.88) {
+  return hex(rgb(color).map((v) => v + (255 - v) * amount) as [number, number, number]);
 }

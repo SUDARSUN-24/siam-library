@@ -234,6 +234,13 @@ const en = {
   eresThaiLis: "ThaiLIS Digital Collection",
   eresThaiJo: "ThaiJO — Thai journals",
   eresScholar: "Google Scholar",
+  stepsHeading: "How it works",
+  step1Title: "Read a free preview",
+  step1Body: "The cover, contents and first pages of every book.",
+  step2Title: "Check the shelf",
+  step2Body: "See if it is available and exactly where it stands.",
+  step3Title: "Borrow at the counter",
+  step3Body: "Take it home today. No online account needed.",
 };
 
 export type Dict = typeof en;
@@ -463,6 +470,13 @@ const th = {
   eresThaiLis: "ThaiLIS ฐานข้อมูลวิทยานิพนธ์และงานวิจัย",
   eresThaiJo: "ThaiJO วารสารวิชาการไทย",
   eresScholar: "Google Scholar",
+  stepsHeading: "ใช้งานอย่างไร",
+  step1Title: "อ่านตัวอย่างฟรี",
+  step1Body: "ปก สารบัญ และหน้าแรก ๆ ของหนังสือทุกเล่ม",
+  step2Title: "เช็กชั้นหนังสือ",
+  step2Body: "ดูว่ามีเล่มว่างไหม และอยู่ชั้นไหน แถวไหน",
+  step3Title: "ยืมที่เคาน์เตอร์",
+  step3Body: "ยืมกลับบ้านได้วันนี้ ไม่ต้องสมัครบัญชีออนไลน์",
 } satisfies Dict;
 
 export const dictionaries: Record<Locale, Dict> = { en, th };

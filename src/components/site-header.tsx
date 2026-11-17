@@ -62,18 +62,25 @@ const eresources = [
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 font-sans text-sm font-semibold text-on-navy">
+    <h2 className="mb-3 font-sans text-sm font-bold text-white">
       {children}
-      <span className="mt-2 block h-0.5 w-6 rounded-full bg-gold" aria-hidden="true" />
+      <span className="mt-2 block h-1 w-7 rounded-full bg-sun" aria-hidden="true" />
     </h2>
   );
 }
 
-const footerLink = "inline-flex items-center gap-1.5 rounded-sm text-on-navy-muted hover:text-on-navy hover:underline underline-offset-4";
+const footerLink = "inline-flex items-center gap-1.5 rounded-sm text-white/90 underline-offset-4 hover:text-white hover:underline";
 
 export function SiteFooter({ t }: { t: Dict }) {
   return (
-    <footer className="no-print on-dark bg-navy text-sm text-on-navy-muted">
+    <footer className="no-print on-color bg-primary text-sm text-white/90">
+      <span className="flex h-1.5" aria-hidden="true">
+        <span className="flex-1 bg-hue-blue" />
+        <span className="flex-1 bg-sun" />
+        <span className="flex-1 bg-hue-raspberry" />
+        <span className="flex-1 bg-hue-teal" />
+        <span className="flex-1 bg-hue-orange" />
+      </span>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 pt-12 pb-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
         <div>
           <FooterHeading>{t.footerLibrary}</FooterHeading>
@@ -117,7 +124,7 @@ export function SiteFooter({ t }: { t: Dict }) {
         <div>
           <FooterHeading>{t.footerContact}</FooterHeading>
           <p className="flex gap-2 leading-relaxed">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden="true" />
+            <MapPin className="mt-0.5 size-4 shrink-0 text-white" aria-hidden="true" />
             {t.footerAddress}
           </p>
           <p className="mt-2 leading-relaxed">{t.footerBorrowNote}</p>
@@ -133,16 +140,16 @@ export function SiteFooter({ t }: { t: Dict }) {
           <Link
             href="/admin/login"
             data-testid="staff-login-link"
-            className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-on-navy-muted/40 px-3 font-medium text-on-navy hover:border-on-navy hover:bg-navy-soft"
+            className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 font-semibold text-primary shadow-sm hover:bg-sun-soft"
           >
             <LogIn className="size-4" aria-hidden="true" />
             {t.staffLogin}
           </Link>
         </div>
       </div>
-      <div className="border-t border-white/10">
+      <div className="border-t border-white/25">
         <div className="mx-auto flex max-w-6xl items-center gap-2.5 px-4 py-5 text-xs">
-          <LibraryMark className="size-5 shrink-0" />
+          <LibraryMark className="size-5 shrink-0 rounded-[5px] ring-1 ring-white/70" />
           <p>
             © {new Date().getFullYear()} {t.siteName}
           </p>

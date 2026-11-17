@@ -63,12 +63,14 @@ The live site uses the same emails with different random passwords — never wri
   Neon (Linux) but not locally; Thai still matches by substring everywhere.
 - All UI strings live in `src/lib/dict.ts` (Thai + English; TS enforces both). Server code
   gets them via `getDict()`; client components get `t` as a prop or import `dictionaries`.
-- Colours only as CSS variables in `globals.css` (one place; measured contrast ratios in its comment):
-  navy `#1d2433` (hero, footer), crimson `#9b1c2e` / hover `#7c1524` (buttons, links, active),
-  gold `#c8963e` (badges, title underline, focus on dark — never text on light backgrounds),
-  white cards/sections, cream `#f5f2ec` + tint `#eef1f6` for alternating sections. Utilities:
-  `section-title`, `surface`, `hero-navy`; `.on-dark` = gold focus outline. White text on a shelf
-  colour always via `shelfInk()` (src/lib/colors.ts). Before/after screenshots: `docs/design/`.
+- Colours only as CSS variables in `globals.css` (one place; measured contrast ratios in its comment).
+  Bright and light — NO dark backgrounds: Siam red `#c41e3a` / hover `#a3172f` (buttons, links,
+  active, footer), sun `#f5b301` (badges, underline, dots — never text), soft tints for sections
+  (`sun-soft` hero, `sky-soft`, `mint-soft`, `rose-soft`, `lilac-soft`; `page` behind catalogue
+  cards), accent hues `hue-blue/orange/raspberry/teal/violet` for icons. White cards on top.
+  Utilities: `section-title`, `surface`; `.on-color` = white focus outline (red footer). Shelf
+  colours via `shelfInk()` (white text), `tint()` (light band), `readableOn()` (src/lib/colors.ts).
+  Before/after screenshots: `docs/design/`.
 - Mobile-first: check at 390 px. Grids holding horizontally-scrolling children need
   `grid-cols-[minmax(0,1fr)]` / `min-w-0`, or the page overflows on phones.
 - Thai typography: never letter-space or justify Thai. Use the `eyebrow` and `prose-justify`
@@ -126,9 +128,9 @@ The live site uses the same emails with different random passwords — never wri
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel + Phase 8: catalogue for thousands of books**
 (details and test results: docs/PLAN.md).
-- 2026-11-17: visual redesign of the public site (navy hero/footer, crimson accents, shelf-colour
-  cards and headers). Shelf colours A `#284a7a`, B `#7a4a14`, C `#6a2347` (data migration
-  `*_shelf_colours`). Playwright locally: 106 passed / 8 skipped.
+- 2026-11-18: brighter redesign of the public site (sunny hero with bookshelf illustration and
+  3 steps, coloured section tints, red footer; no navy). Shelf colours A `#1f63d6`, B `#c2410c`,
+  C `#c2185b` (data migrations `*_shelf_colours`, `*_bright_shelf_colours`).
 - 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
   search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
   Migration `*_catalogue_search` (pg_trgm + indexes) applied to Neon preview + main.

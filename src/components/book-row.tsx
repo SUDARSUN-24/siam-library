@@ -13,12 +13,12 @@ type Props = {
   locale: Locale;
   showPhotos: boolean;
   /** section background */
-  tone?: "white" | "cream" | "tint";
-  /** gold "New" badge on every card */
+  tone?: "white" | "sky" | "mint" | "rose" | "lilac" | "sun";
+  /** "New" badge on every card */
   markNew?: boolean;
 };
 
-const tones = { white: "bg-background", cream: "bg-cream", tint: "bg-tint" };
+const tones = { white: "bg-background", sky: "bg-sky-soft", mint: "bg-mint-soft", rose: "bg-rose-soft", lilac: "bg-lilac-soft", sun: "bg-sun-soft" };
 
 /** Home page: one horizontally scrolling row of up to 10 books + "See all →". */
 export function BookRow({ id, title, seeAllHref, books, t, locale, showPhotos, tone = "white", markNew }: Props) {

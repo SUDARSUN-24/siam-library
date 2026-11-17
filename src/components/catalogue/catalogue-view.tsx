@@ -54,6 +54,7 @@ export function CatalogueView(props: Props) {
   const panel = <FilterPanel {...props} />;
 
   return (
+    <div className="bg-page">
     <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pt-6 pb-16 lg:grid-cols-[15rem_minmax(0,1fr)] lg:pt-8">
       <aside className="hidden lg:block" aria-label={t.filtersHeading}>
         <div className="sticky top-22 rounded-xl border border-input bg-card p-4 shadow-(--shadow-card)">
@@ -133,7 +134,7 @@ export function CatalogueView(props: Props) {
               rows.map((row) => (
                 <section key={row} className="pb-9">
                   <h2 className="mb-4 flex items-center gap-3 font-serif text-lg font-semibold">
-                    <span className="h-5 w-1 rounded-full bg-gold" aria-hidden="true" />
+                    <span className="h-5 w-1.5 rounded-full bg-sun" aria-hidden="true" />
                     {fmt(t.shelfRowHeading, { row })}
                     <span className="h-px flex-1 bg-border" aria-hidden="true" />
                   </h2>
@@ -144,7 +145,7 @@ export function CatalogueView(props: Props) {
               <BookGrid books={books} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
             )
           ) : (
-            <div className="rounded-xl border border-dashed border-input bg-cream px-6 py-14 text-center">
+            <div className="rounded-xl border border-dashed border-input bg-card px-6 py-14 text-center">
               {total > 0 ? (
                 <>
                   <p className="font-serif text-lg font-semibold">{t.pageEmpty}</p>
@@ -164,6 +165,7 @@ export function CatalogueView(props: Props) {
 
         <Pagination t={t} basePath={basePath} params={params} fixed={fixed} page={page} pageCount={pageCount} />
       </div>
+    </div>
     </div>
   );
 }

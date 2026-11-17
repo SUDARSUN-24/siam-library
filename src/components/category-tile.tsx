@@ -39,7 +39,16 @@ const icons: Record<string, LucideIcon> = {
   "Literary Studies": Library,
 };
 
-export function CategoryTile({ name, count, t, locale }: { name: string; count: number; t: Dict; locale: Locale }) {
+/** Bright icon colours, one per tile in turn (icon on its own soft tint). */
+const palette = [
+  "bg-sky-soft text-hue-blue",
+  "bg-rose-soft text-hue-raspberry",
+  "bg-mint-soft text-hue-teal",
+  "bg-sun-soft text-hue-orange",
+  "bg-lilac-soft text-hue-violet",
+];
+
+export function CategoryTile({ name, count, t, locale, index = 0 }: { name: string; count: number; t: Dict; locale: Locale; index?: number }) {
   const Icon = icons[name] ?? BookMarked;
   const label = categoryLabel(name, locale);
   const other = categoryLabel(name, locale === "th" ? "en" : "th");
@@ -49,7 +58,7 @@ export function CategoryTile({ name, count, t, locale }: { name: string; count: 
       data-testid="category-tile"
       className="group surface flex h-full items-center gap-3 rounded-xl p-3 transition-[translate,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-(--shadow-lift)"
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+      <span className={`grid size-11 shrink-0 place-items-center rounded-xl transition-transform group-hover:scale-105 ${palette[index % palette.length]}`}>
         <Icon className="size-5" aria-hidden="true" />
       </span>
       <span className="flex min-w-0 flex-col">

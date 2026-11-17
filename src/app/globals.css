@@ -29,13 +29,18 @@
   --color-paper: var(--paper);
   --color-crimson: var(--crimson);
   --color-primary-hover: var(--primary-hover);
-  --color-navy: var(--navy);
-  --color-navy-soft: var(--navy-soft);
-  --color-on-navy: var(--on-navy);
-  --color-on-navy-muted: var(--on-navy-muted);
-  --color-gold: var(--gold);
-  --color-cream: var(--cream);
-  --color-tint: var(--tint);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --color-sky-soft: var(--sky-soft);
+  --color-mint-soft: var(--mint-soft);
+  --color-rose-soft: var(--rose-soft);
+  --color-lilac-soft: var(--lilac-soft);
+  --color-page: var(--page);
+  --color-hue-blue: var(--hue-blue);
+  --color-hue-orange: var(--hue-orange);
+  --color-hue-raspberry: var(--hue-raspberry);
+  --color-hue-teal: var(--hue-teal);
+  --color-hue-violet: var(--hue-violet);
   --color-viewer: var(--viewer);
   --color-available: var(--available);
   --color-borrowed: var(--borrowed);
@@ -48,28 +53,38 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Siam University Library palette — the ONE place for colours.
-   Contrast (WCAG AA, measured with contrast() in src/lib/colors.ts): ink on white 15.5:1 ·
-   crimson on white 8.1, on cream 7.2, on tint 7.1 · muted text on white 6.5, on cream 5.8, on tint
-   5.8, on viewer 5.0 · white on navy 15.5 · light grey on navy 9.4 · gold on navy 5.8 · ink on gold
-   5.8 · white on crimson 8.1, on crimson hover 10.6 · green status on tint 5.3, amber on cream 5.3.
-   Gold is never text on light backgrounds (2.7:1): lines, badges with ink text, focus details only.
-   Shelf colours come from the database (A #284a7a, B #7a4a14, C #6a2347); white text on them goes
-   through shelfInk() in src/lib/colors.ts, which darkens any colour that would fall below 4.5:1. */
+/* Siam University Library palette — the ONE place for colours. Bright, warm and light: no dark
+   backgrounds; dark ink text on soft tints, white text only on the brand red and shelf colours.
+   Contrast (WCAG AA, measured with contrast() in src/lib/colors.ts):
+   ink on white 15.5:1, on any soft tint >= 13.3 · muted text on white 6.5, on tints >= 5.6,
+   on viewer 4.9 · red on white 5.8, on tints >= 5.0 · red hover on white 7.7 · white on red 5.8,
+   on red hover 7.7 · ink on sun 8.4 · green status on tints >= 5.2, amber status >= 5.1.
+   Sun (#f5b301) is never text: badges with ink text, lines and dots only.
+   Shelf colours come from the database (A #1f63d6, B #c2410c, C #c2185b; white text 5.5 / 5.2 /
+   5.9); white text on a shelf colour always goes through shelfInk(), and shelf-coloured text on a
+   tint through readableOn() (src/lib/colors.ts), which darken a colour that would fail 4.5:1. */
 :root {
   /* brand */
-  --navy: #1d2433; /* hero band, footer, important sections */
-  --navy-soft: #2a3346; /* raised surfaces on navy */
-  --on-navy: #ffffff;
-  --on-navy-muted: #c3c9d6;
-  --crimson: #9b1c2e; /* main accent: buttons, links, active states */
-  --primary-hover: #7c1524;
-  --gold: #c8963e; /* small second accent: "New" badges, title underline, focus details */
-  /* surfaces */
+  --crimson: #c41e3a; /* Siam red: buttons, links, active states, footer */
+  --primary-hover: #a3172f;
+  --sun: #f5b301; /* bright second accent: "New" badges, title underline, dots */
+  /* bright accent hues (icons, illustration, stripes; white text on each >= 5.1:1) */
+  --hue-blue: #1f63d6;
+  --hue-orange: #c2410c;
+  --hue-raspberry: #c2185b;
+  --hue-teal: #0f7b6c;
+  --hue-violet: #6d28d9;
+  --wood: #e0a43a; /* hero illustration shelf */
+  --wood-dark: #c98d27;
+  /* surfaces: white cards on soft, bright tints */
   --background: #ffffff;
-  --cream: #f5f2ec; /* alternating sections only */
-  --tint: #eef1f6; /* light navy tint sections */
-  --viewer: #e6e1d6; /* behind the preview "paper" page */
+  --sun-soft: #fff4d6; /* hero */
+  --sky-soft: #e8f0fe;
+  --mint-soft: #e2f5ec;
+  --rose-soft: #fdebef;
+  --lilac-soft: #f0ebfd;
+  --page: #f4f7fc; /* catalogue body behind white cards */
+  --viewer: #d6e0ef; /* behind the preview "paper" page */
   --paper: #fffcf5;
   /* shadcn tokens */
   --foreground: #1d2433;
@@ -79,23 +94,23 @@
   --popover-foreground: #1d2433;
   --primary: var(--crimson);
   --primary-foreground: #ffffff;
-  --secondary: #eef1f6;
+  --secondary: #e8f0fe;
   --secondary-foreground: #1d2433;
-  --muted: #f1efea;
+  --muted: #f1f4f9;
   --muted-foreground: #565e6f;
-  --accent: #f6e9eb;
+  --accent: #fdebef;
   --accent-foreground: #1d2433;
   --destructive: #b42318;
-  --border: #dde1e8;
-  --input: #c9cfda;
-  --ring: #9b1c2e;
+  --border: #dde3ec;
+  --input: #c6cfdc;
+  --ring: #c41e3a;
   --radius: 0.625rem;
   /* status */
   --available: #23704a;
   --borrowed: #a34a12;
-  /* shadows (navy-tinted, soft) */
-  --shadow-card: 0 1px 2px rgba(29, 36, 51, 0.06), 0 4px 14px -6px rgba(29, 36, 51, 0.16);
-  --shadow-lift: 0 2px 4px rgba(29, 36, 51, 0.06), 0 14px 30px -12px rgba(29, 36, 51, 0.3);
+  /* shadows (soft, blue-grey) */
+  --shadow-card: 0 1px 2px rgba(29, 36, 51, 0.05), 0 4px 14px -6px rgba(29, 36, 51, 0.14);
+  --shadow-lift: 0 2px 4px rgba(29, 36, 51, 0.05), 0 16px 32px -12px rgba(29, 36, 51, 0.25);
 }
 
 @layer base {
@@ -114,20 +129,20 @@
   h3 {
     @apply font-heading;
   }
-  /* Keyboard focus: crimson outline on light backgrounds, gold on navy / shelf colours. */
+  /* Keyboard focus: red outline on light backgrounds, white on the red footer. */
   a:focus-visible,
   button:focus-visible,
   select:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-  .on-dark a:focus-visible,
-  .on-dark button:focus-visible {
-    outline-color: var(--gold);
+  .on-color a:focus-visible,
+  .on-color button:focus-visible {
+    outline-color: #ffffff;
   }
 }
 
-/* Section title: serif, larger, with a short crimson + gold underline. */
+/* Section title: serif, larger, with a short red + sun underline. */
 @utility section-title {
   font-family: var(--font-heading);
   font-size: 1.375rem;
@@ -141,7 +156,7 @@
     height: 3px;
     margin-top: 0.5rem;
     border-radius: 2px;
-    background: linear-gradient(90deg, var(--crimson) 0 65%, var(--gold) 65% 100%);
+    background: linear-gradient(90deg, var(--crimson) 0 60%, var(--sun) 60% 100%);
   }
   @media (width >= 40rem) {
     font-size: 1.625rem;
@@ -153,23 +168,6 @@
   background: var(--card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
-}
-
-/* Hero band: deep navy with faint book-spine stripes (CSS only). */
-@utility hero-navy {
-  background-color: var(--navy);
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgb(255 255 255 / 0.035) 0 18px,
-      transparent 18px 24px,
-      rgb(255 255 255 / 0.02) 24px 34px,
-      transparent 34px 38px,
-      rgb(255 255 255 / 0.045) 38px 50px,
-      transparent 50px 58px
-    ),
-    linear-gradient(180deg, transparent 55%, rgb(0 0 0 / 0.18));
-  color: var(--on-navy);
 }
 
 /* Small uppercase label. Letter-spacing only for Latin text — tracking breaks Thai
