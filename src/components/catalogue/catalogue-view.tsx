@@ -8,12 +8,15 @@ import { Pagination } from "./pagination";
 import { catalogueHref, defaultSort, PAGE_SIZE, type Sort } from "@/lib/catalogue";
 import { categoryLabel, fmt } from "@/lib/dict";
 import type { CataloguePage } from "@/lib/books";
+import { shelfInk, tint } from "@/lib/colors";
 
 type Props = FilterPanelProps & {
   result: CataloguePage;
   showPhotos: boolean;
   /** Shelf pages in shelf order: put "Row n" headings between the books. */
   groupByRow?: boolean;
+  /** Shelf pages: the shelf colour — each row is drawn as a tinted bookshelf with a wooden plank. */
+  accent?: string;
 };
 
 /**
@@ -21,7 +24,7 @@ type Props = FilterPanelProps & {
  * filter sidebar (bottom sheet on phones) · result count + sort · grid · page numbers.
  */
 export function CatalogueView(props: Props) {
-  const { t, locale, basePath, params, fixed, categories, result, showPhotos, groupByRow } = props;
+  const { t, locale, basePath, params, fixed, categories, result, showPhotos, groupByRow, accent } = props;
   const { books, total, page, pageCount } = result;
   const sort: Sort = params.sort ?? defaultSort(params);
   const activeCount = activeFilterCount(props);
@@ -133,16 +136,33 @@ export function CatalogueView(props: Props) {
         <div className="pt-6">
           {books.length > 0 ? (
             groupByRow ? (
-              rows.map((row) => (
-                <section key={row} className="pb-9">
-                  <h2 className="mb-4 flex items-center gap-3 font-serif text-lg font-semibold">
-                    <span className="h-5 w-1.5 rounded-full bg-sun" aria-hidden="true" />
-                    {fmt(t.shelfRowHeading, { row })}
-                    <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                  </h2>
-                  <BookGrid books={books.filter((b) => b.row === row)} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
-                </section>
-              ))
+              rows.map((row) => {
+                const inRow = books.filter((b) => b.row === row);
+                return accent ? (
+                  <section key={row} className="mb-6 rounded-2xl border border-black/5 p-3 pb-0 sm:p-4 sm:pb-0" style={{ background: tint(accent, 0.92) }}>
+                    <div className="mb-3 flex items-center gap-3">
+                      <h2 className="rounded-lg px-3 py-1 font-serif text-base font-bold text-white shadow-sm" style={{ background: shelfInk(accent) }}>
+                        {fmt(t.shelfRowHeading, { row })}
+                      </h2>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {inRow.length === 1 ? t.bookCount1 : fmt(t.booksCount, { n: inRow.length })}
+                      </span>
+                    </div>
+                    <BookGrid books={inRow} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
+                    {/* the wooden plank the books stand on */}
+                    <div className="-mx-3 mt-4 h-3 rounded-b-2xl bg-wood shadow-[inset_0_-3px_0_var(--wood-dark)] sm:-mx-4" aria-hidden="true" />
+                  </section>
+                ) : (
+                  <section key={row} className="pb-9">
+                    <h2 className="mb-4 flex items-center gap-3 font-serif text-lg font-semibold">
+                      <span className="h-5 w-1.5 rounded-full bg-sun" aria-hidden="true" />
+                      {fmt(t.shelfRowHeading, { row })}
+                      <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                    </h2>
+                    <BookGrid books={inRow} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
+                  </section>
+                );
+              })
             ) : (
               <BookGrid books={books} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
             )

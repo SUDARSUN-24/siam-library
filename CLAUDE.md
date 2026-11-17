@@ -133,6 +133,8 @@ The live site uses the same emails with different random passwords — never wri
   C `#c2185b` (data migrations `*_shelf_colours`, `*_bright_shelf_colours`).
   Book page: "Find it at" card + colourful detail tiles; catalogue: coloured filter groups, shelf
   letters, category icons (fixed colour per category: `categoryStyle()` in category-tile.tsx).
+  Shelf page: header drawing in the shelf colour (`ShelfArt`), rows drawn as tinted bookshelves
+  with a wooden plank (`accent` prop of `<CatalogueView>`), QR card tinted.
 - 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
   search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
   Migration `*_catalogue_search` (pg_trgm + indexes) applied to Neon preview + main.
@@ -149,5 +151,7 @@ Known gaps / not verified:
 - No web UI for staff accounts (use `npm run user:create`).
 - Book-form validation messages are translated (zod issues → `dict.ts`, forms `noValidate`).
 - End-of-preview text says the counter is on the ground floor — placeholder; confirm with the library.
+- The scanner auto-capture E2E test is timing-sensitive: it can fail once in a full run under load
+  but passes on its own (`--repeat-each=3`: 36/36).
 - Footer contact (university address) and e-resource links (ThaiLIS, ThaiJO, Google Scholar) are
   placeholders chosen for the redesign — confirm with the library.

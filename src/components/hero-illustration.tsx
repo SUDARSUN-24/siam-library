@@ -87,3 +87,30 @@ export function SpineStrip({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Shelf page header: books in shades of the shelf's own colour, plus a sun-yellow one (decorative). */
+const shelfBooks = [
+  { h: 96, o: 1 },
+  { h: 120, o: 0.7 },
+  { h: 108, o: 0.85 },
+  { h: 132, sun: true },
+  { h: 100, o: 0.55 },
+  { h: 124, o: 1 },
+  { h: 90, o: 0.75 },
+];
+
+export function ShelfArt({ color, className }: { color: string; className?: string }) {
+  return (
+    <svg viewBox="0 0 240 150" className={className} aria-hidden="true" focusable="false">
+      <circle cx="170" cy="56" r="48" fill="#fff" opacity=".55" />
+      {shelfBooks.map((b, i) => (
+        <g key={i}>
+          <rect x={10 + i * 31} y={140 - b.h} width="26" height={b.h} rx="3" fill={b.sun ? "var(--sun)" : color} opacity={b.sun ? 1 : b.o} />
+          <rect x={10 + i * 31} y={140 - b.h + 12} width="26" height="4" fill="#fff" opacity=".55" />
+          <rect x={10 + i * 31} y={140 - 18} width="26" height="3" fill="#fff" opacity=".4" />
+        </g>
+      ))}
+      <rect x="0" y="140" width="240" height="8" rx="3" fill="var(--wood)" />
+    </svg>
+  );
+}
