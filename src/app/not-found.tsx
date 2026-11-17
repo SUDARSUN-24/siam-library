@@ -8,7 +8,7 @@ export default async function NotFound() {
       <p className="font-serif text-6xl font-semibold text-crimson">404</p>
       <h1 className="mt-3 font-serif text-xl font-semibold">{t.notFoundTitle}</h1>
       <p className="mt-2 text-muted-foreground">{t.notFoundBody}</p>
-      <Link href="/" className="mt-6 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">
+      <Link href="/" className="mt-6 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">
         {t.backToBooks}
       </Link>
     </main>

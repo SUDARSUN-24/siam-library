@@ -36,15 +36,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <section className="border-b border-border/70 bg-[radial-gradient(ellipse_at_top,#fffcf5_0%,transparent_70%)]">
+      <section className="border-b border-border bg-tint">
         <div className="mx-auto max-w-6xl px-4 pt-5 pb-8 sm:pt-8">
-          <Link href="/books" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+          <Link href="/books" className="inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t.backToBooks}
           </Link>
-          <p className="eyebrow mt-5 text-primary">{t.category}</p>
-          <h1 className="font-serif text-2xl leading-tight font-semibold sm:text-3xl">{label}</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="eyebrow mt-5 font-semibold text-primary">{t.category}</p>
+          <h1 className="mt-1 font-serif text-[1.75rem] leading-tight font-semibold sm:text-4xl">{label}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {other !== label && <>{other} · </>}
             {category.count === 1 ? t.bookCount1 : fmt(t.booksCount, { n: category.count.toLocaleString("en-US") })}
           </p>

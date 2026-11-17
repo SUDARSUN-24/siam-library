@@ -4,7 +4,7 @@ import { qrSvg, siteUrl } from "@/lib/qr";
 export async function BookQr({ path, label, code }: { path: string; label: string; code: string }) {
   const svg = await qrSvg(path);
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4" data-testid="book-qr">
+    <div className="surface flex items-center gap-4 rounded-xl p-4" data-testid="book-qr">
       <div
         className="size-24 shrink-0 [&_svg]:h-full [&_svg]:w-full"
         role="img"

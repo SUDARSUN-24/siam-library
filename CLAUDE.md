@@ -63,7 +63,12 @@ The live site uses the same emails with different random passwords — never wri
   Neon (Linux) but not locally; Thai still matches by substring everywhere.
 - All UI strings live in `src/lib/dict.ts` (Thai + English; TS enforces both). Server code
   gets them via `getDict()`; client components get `t` as a prop or import `dictionaries`.
-- Colours as CSS variables in `globals.css` — off-white `#f5f2ec`, ink `#1d2433`, crimson `#9b1c2e`.
+- Colours only as CSS variables in `globals.css` (one place; measured contrast ratios in its comment):
+  navy `#1d2433` (hero, footer), crimson `#9b1c2e` / hover `#7c1524` (buttons, links, active),
+  gold `#c8963e` (badges, title underline, focus on dark — never text on light backgrounds),
+  white cards/sections, cream `#f5f2ec` + tint `#eef1f6` for alternating sections. Utilities:
+  `section-title`, `surface`, `hero-navy`; `.on-dark` = gold focus outline. White text on a shelf
+  colour always via `shelfInk()` (src/lib/colors.ts). Before/after screenshots: `docs/design/`.
 - Mobile-first: check at 390 px. Grids holding horizontally-scrolling children need
   `grid-cols-[minmax(0,1fr)]` / `min-w-0`, or the page overflows on phones.
 - Thai typography: never letter-space or justify Thai. Use the `eyebrow` and `prose-justify`
@@ -121,6 +126,9 @@ The live site uses the same emails with different random passwords — never wri
 ## Current status
 **All 6 phases complete + Phase 7: live on Vercel + Phase 8: catalogue for thousands of books**
 (details and test results: docs/PLAN.md).
+- 2026-11-17: visual redesign of the public site (navy hero/footer, crimson accents, shelf-colour
+  cards and headers). Shelf colours A `#284a7a`, B `#7a4a14`, C `#6a2347` (data migration
+  `*_shelf_colours`). Playwright locally: 106 passed / 8 skipped.
 - 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
   search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
   Migration `*_catalogue_search` (pg_trgm + indexes) applied to Neon preview + main.
@@ -137,3 +145,5 @@ Known gaps / not verified:
 - No web UI for staff accounts (use `npm run user:create`).
 - Book-form validation messages are translated (zod issues → `dict.ts`, forms `noValidate`).
 - End-of-preview text says the counter is on the ground floor — placeholder; confirm with the library.
+- Footer contact (university address) and e-resource links (ThaiLIS, ThaiJO, Google Scholar) are
+  placeholders chosen for the redesign — confirm with the library.

@@ -28,8 +28,10 @@ function Option({ href, active, children, testId }: { href: string; active: bool
         aria-current={active ? "true" : undefined}
         data-testid={testId}
         className={cn(
-          "flex min-h-10 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm lg:min-h-9",
-          active ? "bg-primary/8 font-medium text-primary" : "text-foreground/85 hover:bg-muted hover:text-primary",
+          "relative flex min-h-10 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm lg:min-h-9",
+          active
+            ? "bg-accent font-semibold text-primary before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary"
+            : "text-foreground/85 hover:bg-muted hover:text-primary",
         )}
       >
         {children}
@@ -40,8 +42,8 @@ function Option({ href, active, children, testId }: { href: string; active: bool
 
 function Section({ title, children, scroll }: { title: string; children: React.ReactNode; scroll?: boolean }) {
   return (
-    <section className="border-t border-border/70 pt-4 first:border-t-0 first:pt-0">
-      <h3 className="eyebrow mb-2 px-2.5 text-xs font-semibold text-muted-foreground">{title}</h3>
+    <section className="border-t border-border pt-4 first:border-t-0 first:pt-0">
+      <h3 className="eyebrow mb-2 px-2.5 font-sans text-xs font-semibold text-foreground/70">{title}</h3>
       <ul className={cn("flex flex-col gap-0.5", scroll && "max-h-72 overflow-y-auto overscroll-contain lg:max-h-80")}>{children}</ul>
     </section>
   );

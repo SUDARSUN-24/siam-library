@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { Languages, LibraryBig } from "lucide-react";
+import { ExternalLink, Languages, LogIn, MapPin } from "lucide-react";
 import { setLocale } from "@/app/actions/locale";
 import type { Dict, Locale } from "@/lib/dict";
+import { cn } from "@/lib/utils";
+import { SiteNav } from "./site-nav";
 
 export function LibraryMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
       <rect width="32" height="32" rx="7" fill="var(--crimson)" />
-      <path d="M8 10.5c2.6-.9 5.3-.6 8 1.2v11c-2.7-1.8-5.4-2.1-8-1.2z" fill="#fdf8ee" />
-      <path d="M24 10.5c-2.6-.9-5.3-.6-8 1.2v11c2.7-1.8 5.4-2.1 8-1.2z" fill="#fdf8ee" opacity=".78" />
+      <path d="M8 10.5c2.6-.9 5.3-.6 8 1.2v11c-2.7-1.8-5.4-2.1-8-1.2z" fill="#ffffff" />
+      <path d="M24 10.5c-2.6-.9-5.3-.6-8 1.2v11c2.7-1.8 5.4-2.1 8-1.2z" fill="#ffffff" opacity=".78" />
     </svg>
   );
 }
@@ -21,7 +23,7 @@ export function LanguageToggle({ t, locale }: { t: Dict; locale: Locale }) {
         type="submit"
         aria-label={t.langToggleAria}
         data-testid="lang-toggle"
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium whitespace-nowrap hover:border-primary/40 hover:text-primary"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-sm font-medium whitespace-nowrap hover:border-primary hover:text-primary"
       >
         <Languages className="size-4" aria-hidden="true" />
         {t.langToggle}
@@ -32,47 +34,119 @@ export function LanguageToggle({ t, locale }: { t: Dict; locale: Locale }) {
 
 export function SiteHeader({ t, locale }: { t: Dict; locale: Locale }) {
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+    <header className="no-print sticky top-0 z-30 border-t-[3px] border-b border-t-primary border-b-border bg-card/95 shadow-[0_1px_8px_-4px_rgba(29,36,51,.18)] backdrop-blur supports-[backdrop-filter]:bg-card/90">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:h-16">
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
-          <LibraryMark className="size-8 shrink-0" />
+        <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-md">
+          <LibraryMark className="size-8 shrink-0 sm:size-9" />
           <span className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate font-serif text-[15px] font-semibold sm:text-base">{t.siteName}</span>
-            <span className="eyebrow truncate !text-[11px] !tracking-[0.08em] text-muted-foreground">{t.siteTagline}</span>
+            <span className="truncate font-serif text-[15px] font-semibold text-foreground sm:text-[17px]">{t.siteName}</span>
+            <span className="eyebrow truncate !text-[11px] !tracking-[0.08em] text-primary">{t.siteTagline}</span>
           </span>
         </Link>
-        <nav className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Link
-            href="/books"
-            data-testid="nav-books"
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground sm:px-3"
-          >
-            <LibraryBig className="size-4 sm:hidden" aria-hidden="true" />
-            {t.navBooks}
-          </Link>
-          <Link
-            href="/#shelves"
-            className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground sm:inline-flex"
-          >
-            {t.navShelves}
-          </Link>
-          <LanguageToggle t={t} locale={locale} />
+        <nav className="ml-auto flex items-center gap-0.5 sm:gap-1">
+          <SiteNav booksLabel={t.navBooks} shelvesLabel={t.navShelves} />
+          <span className="ml-1 sm:ml-2">
+            <LanguageToggle t={t} locale={locale} />
+          </span>
         </nav>
       </div>
     </header>
   );
 }
 
+const eresources = [
+  { key: "eresThaiLis", href: "https://tdc.thailis.or.th" },
+  { key: "eresThaiJo", href: "https://www.tci-thaijo.org" },
+  { key: "eresScholar", href: "https://scholar.google.com" },
+] as const;
+
+function FooterHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 font-sans text-sm font-semibold text-on-navy">
+      {children}
+      <span className="mt-2 block h-0.5 w-6 rounded-full bg-gold" aria-hidden="true" />
+    </h2>
+  );
+}
+
+const footerLink = "inline-flex items-center gap-1.5 rounded-sm text-on-navy-muted hover:text-on-navy hover:underline underline-offset-4";
+
 export function SiteFooter({ t }: { t: Dict }) {
   return (
-    <footer className="no-print mt-16 border-t border-border/70">
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          © {new Date().getFullYear()} {t.siteName}
-        </p>
-        <Link href="/admin/login" className="hover:text-foreground" data-testid="staff-login-link">
-          {t.staffLogin}
-        </Link>
+    <footer className="no-print on-dark bg-navy text-sm text-on-navy-muted">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 pt-12 pb-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+        <div>
+          <FooterHeading>{t.footerLibrary}</FooterHeading>
+          <ul className="flex flex-col gap-2">
+            <li>
+              <Link href="/" className={footerLink}>
+                {t.navHome}
+              </Link>
+            </li>
+            <li>
+              <Link href="/books" className={footerLink}>
+                {t.catalogueTitle}
+              </Link>
+            </li>
+            <li>
+              <Link href="/#shelves" className={footerLink}>
+                {t.shelvesHeading}
+              </Link>
+            </li>
+            <li>
+              <Link href="/#categories" className={footerLink}>
+                {t.categoriesHeading}
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <FooterHeading>{t.footerEresources}</FooterHeading>
+          <ul className="flex flex-col gap-2">
+            {eresources.map((e) => (
+              <li key={e.key}>
+                <a href={e.href} target="_blank" rel="noopener noreferrer" className={footerLink}>
+                  {t[e.key]}
+                  <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="sr-only">{t.footerNewTab}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <FooterHeading>{t.footerContact}</FooterHeading>
+          <p className="flex gap-2 leading-relaxed">
+            <MapPin className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden="true" />
+            {t.footerAddress}
+          </p>
+          <p className="mt-2 leading-relaxed">{t.footerBorrowNote}</p>
+          <a href="https://www.siam.edu" target="_blank" rel="noopener noreferrer" className={cn(footerLink, "mt-2")}>
+            {t.footerUniversity}
+            <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="sr-only">{t.footerNewTab}</span>
+          </a>
+        </div>
+        <div>
+          <FooterHeading>{t.footerStaffHeading}</FooterHeading>
+          <p className="leading-relaxed">{t.staffLoginHint}</p>
+          <Link
+            href="/admin/login"
+            data-testid="staff-login-link"
+            className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-on-navy-muted/40 px-3 font-medium text-on-navy hover:border-on-navy hover:bg-navy-soft"
+          >
+            <LogIn className="size-4" aria-hidden="true" />
+            {t.staffLogin}
+          </Link>
+        </div>
+      </div>
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl items-center gap-2.5 px-4 py-5 text-xs">
+          <LibraryMark className="size-5 shrink-0" />
+          <p>
+            © {new Date().getFullYear()} {t.siteName}
+          </p>
+        </div>
       </div>
     </footer>
   );

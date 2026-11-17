@@ -22,7 +22,7 @@ export function FilterSheet({ label, closeLabel, showLabel, activeCount, childre
         <button
           type="button"
           data-testid="filters-button"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-input bg-card px-4 text-sm font-medium hover:border-primary/40 hover:text-primary lg:hidden"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-input bg-card px-4 text-sm font-medium shadow-sm hover:border-primary hover:text-primary lg:hidden"
         >
           <SlidersHorizontal className="size-4" aria-hidden="true" />
           {label}
@@ -41,7 +41,7 @@ export function FilterSheet({ label, closeLabel, showLabel, activeCount, childre
           onClick={(e) => {
             if ((e.target as HTMLElement).closest("a")) setOpen(false);
           }}
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl border-t border-border bg-background shadow-[0_-12px_32px_-12px_rgba(29,36,51,.35)] outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl border-t-[3px] border-primary bg-card shadow-[0_-12px_32px_-12px_rgba(29,36,51,.35)] outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom"
         >
           <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden="true" />
           <div className="flex items-center justify-between px-4 pt-2 pb-3">
@@ -52,7 +52,7 @@ export function FilterSheet({ label, closeLabel, showLabel, activeCount, childre
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-4">{children}</div>
           <div className="border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <D.Close className="h-11 w-full rounded-full bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            <D.Close className="h-11 w-full rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary-hover">
               {showLabel}
             </D.Close>
           </div>

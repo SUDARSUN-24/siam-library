@@ -221,6 +221,19 @@ const en = {
   suggestionsCount: "{n} suggestions. Use the up and down arrows to choose.",
   suggestionsNone: "No matching books",
   suggestSeeAll: "See all results for “{q}”",
+  // Visual redesign: badges, footer
+  badgeNew: "New",
+  footerLibrary: "Library",
+  footerEresources: "E-resources",
+  footerContact: "Contact",
+  footerStaffHeading: "Library staff",
+  footerAddress: "Siam University, 38 Phetkasem Road, Phasi Charoen, Bangkok 10160",
+  footerBorrowNote: "Borrow books in person at the library counter.",
+  footerUniversity: "Siam University website",
+  footerNewTab: "(opens in a new tab)",
+  eresThaiLis: "ThaiLIS Digital Collection",
+  eresThaiJo: "ThaiJO — Thai journals",
+  eresScholar: "Google Scholar",
 };
 
 export type Dict = typeof en;
@@ -437,6 +450,19 @@ const th = {
   suggestionsCount: "มีคำแนะนำ {n} รายการ ใช้ปุ่มลูกศรขึ้นลงเพื่อเลือก",
   suggestionsNone: "ไม่พบหนังสือที่ตรงกัน",
   suggestSeeAll: "ดูผลการค้นหาทั้งหมดสำหรับ “{q}”",
+  // Visual redesign: badges, footer
+  badgeNew: "ใหม่",
+  footerLibrary: "ห้องสมุด",
+  footerEresources: "ทรัพยากรอิเล็กทรอนิกส์",
+  footerContact: "ติดต่อ",
+  footerStaffHeading: "เจ้าหน้าที่ห้องสมุด",
+  footerAddress: "มหาวิทยาลัยสยาม 38 ถนนเพชรเกษม เขตภาษีเจริญ กรุงเทพฯ 10160",
+  footerBorrowNote: "ยืมหนังสือได้ด้วยตนเองที่เคาน์เตอร์ห้องสมุด",
+  footerUniversity: "เว็บไซต์มหาวิทยาลัยสยาม",
+  footerNewTab: "(เปิดในแท็บใหม่)",
+  eresThaiLis: "ThaiLIS ฐานข้อมูลวิทยานิพนธ์และงานวิจัย",
+  eresThaiJo: "ThaiJO วารสารวิชาการไทย",
+  eresScholar: "Google Scholar",
 } satisfies Dict;
 
 export const dictionaries: Record<Locale, Dict> = { en, th };

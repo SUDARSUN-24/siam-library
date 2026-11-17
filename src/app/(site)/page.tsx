@@ -38,41 +38,46 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   return (
     <>
-      {/* Hero + search */}
-      <section className="border-b border-border/70 bg-[radial-gradient(ellipse_at_top,#fffcf5_0%,transparent_70%)]">
-        <div className="mx-auto max-w-3xl px-4 pt-10 pb-8 sm:pt-16 sm:pb-12">
-          <p className="eyebrow mb-3 text-primary">{t.siteTagline}</p>
-          <h1 className="font-serif text-[2rem] leading-tight font-semibold text-balance sm:text-5xl">{t.heroTitle}</h1>
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">{t.heroSubtitle}</p>
-          <div className="mt-7">
-            <SearchBox t={t} action="/books" />
-          </div>
+      {/* Hero: navy band with faint book spines; the search card overlaps its lower edge */}
+      <section className="hero-navy on-dark relative overflow-hidden">
+        <div className="relative mx-auto max-w-3xl px-4 pt-10 pb-24 sm:pt-16 sm:pb-28">
+          <p className="eyebrow mb-3 text-gold">{t.siteTagline}</p>
+          <h1 className="font-serif text-[2rem] leading-tight font-semibold text-balance text-on-navy sm:text-5xl">{t.heroTitle}</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-on-navy-muted sm:text-base">{t.heroSubtitle}</p>
+        </div>
+        <span className="absolute inset-x-0 bottom-0 h-1 bg-[linear-gradient(90deg,var(--crimson)_0_70%,var(--gold)_70%_100%)]" aria-hidden="true" />
+      </section>
+      <div className="relative z-10 mx-auto -mt-16 max-w-3xl px-4 sm:-mt-20">
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-[0_24px_48px_-20px_rgba(29,36,51,.45),0_4px_12px_-4px_rgba(29,36,51,.12)] sm:p-5">
+          <SearchBox t={t} action="/books" />
           <Link
             href="/books"
-            className="group mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary"
+            className="group mt-3 ml-2 inline-flex items-center gap-1 rounded-md text-sm font-semibold text-primary hover:text-primary-hover"
             data-testid="browse-all"
           >
             {fmt(t.browseAll, { n: total.toLocaleString("en-US") })}
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>
-      </section>
+      </div>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] px-4">
-        {/* Shelves */}
-        <section id="shelves" className="scroll-mt-20 pt-10">
-          <h2 className="mb-4 font-serif text-xl font-semibold">{t.shelvesHeading}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Shelves (white) */}
+      <section id="shelves" className="scroll-mt-20 bg-background">
+        <div className="mx-auto max-w-6xl px-4 pt-12 pb-10 sm:pt-14 sm:pb-12">
+          <h2 className="section-title mb-5">{t.shelvesHeading}</h2>
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {shelves.map((s) => (
               <ShelfCard key={s.id} shelf={s} t={t} locale={locale} />
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Categories */}
-        {byCount.length > 0 && (
-          <section id="categories" className="scroll-mt-20 pt-10">
-            <h2 className="mb-4 font-serif text-xl font-semibold">{t.categoriesHeading}</h2>
+      {/* Categories (light navy tint) */}
+      {byCount.length > 0 && (
+        <section id="categories" className="scroll-mt-20 bg-tint">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:py-12">
+            <h2 className="section-title mb-5">{t.categoriesHeading}</h2>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {byCount.map((c) => (
                 <li key={c.slug}>
@@ -80,14 +85,14 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          </div>
+        </section>
+      )}
 
-        {/* Rows */}
-        <BookRow id="new" title={t.rowNewArrivals} seeAllHref="/books?sort=newest" books={rows.newArrivals} t={t} locale={locale} showPhotos={showPhotos} />
-        <BookRow id="available" title={t.rowAvailableNow} seeAllHref="/books?available=1" books={rows.availableNow} t={t} locale={locale} showPhotos={showPhotos} />
-        <BookRow id="thai" title={t.rowThaiBooks} seeAllHref="/books?lang=th" books={rows.thaiBooks} t={t} locale={locale} showPhotos={showPhotos} />
-      </div>
+      {/* Rows: white / off-white / white */}
+      <BookRow id="new" title={t.rowNewArrivals} seeAllHref="/books?sort=newest" books={rows.newArrivals} t={t} locale={locale} showPhotos={showPhotos} markNew />
+      <BookRow id="available" title={t.rowAvailableNow} seeAllHref="/books?available=1" books={rows.availableNow} t={t} locale={locale} showPhotos={showPhotos} tone="cream" />
+      <BookRow id="thai" title={t.rowThaiBooks} seeAllHref="/books?lang=th" books={rows.thaiBooks} t={t} locale={locale} showPhotos={showPhotos} />
     </>
   );
 }

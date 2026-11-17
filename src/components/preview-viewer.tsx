@@ -94,8 +94,8 @@ export function PreviewViewer({ locale, pages, book, bookLanguage, location, ava
         }}
       >
         {/* stacked-pages illusion */}
-        <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-r-md bg-[#ebe3d4]" aria-hidden="true" />
-        <div className="absolute inset-0 translate-x-[3px] translate-y-[3px] rounded-r-md bg-[#f3ecdf]" aria-hidden="true" />
+        <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-r-md bg-[#d9d2c3]" aria-hidden="true" />
+        <div className="absolute inset-0 translate-x-[3px] translate-y-[3px] rounded-r-md bg-[#f1ebdf]" aria-hidden="true" />
 
         <div
           className="@container relative aspect-[5/7] w-full overflow-hidden rounded-r-md rounded-l-[3px] bg-paper shadow-[0_2px_4px_rgba(29,36,51,.12),0_18px_40px_-18px_rgba(29,36,51,.45)]"
@@ -180,7 +180,7 @@ export function PreviewViewer({ locale, pages, book, bookLanguage, location, ava
           disabled={index === 0}
           aria-label={t.viewerPrev}
           data-testid="viewer-prev"
-          className="grid size-11 place-items-center rounded-full border border-border bg-card hover:border-primary/40 hover:text-primary disabled:opacity-35 disabled:hover:border-border disabled:hover:text-inherit"
+          className="grid size-11 place-items-center rounded-full border border-input bg-card shadow-sm hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-input disabled:hover:text-inherit"
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -196,7 +196,7 @@ export function PreviewViewer({ locale, pages, book, bookLanguage, location, ava
           disabled={index === last}
           aria-label={t.viewerNext}
           data-testid="viewer-next"
-          className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-35"
+          className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-40"
         >
           <ChevronRight className="size-5" />
         </button>
@@ -215,7 +215,7 @@ export function PreviewViewer({ locale, pages, book, bookLanguage, location, ava
                 aria-current={i === index ? "page" : undefined}
                 className={cn(
                   "@container relative block aspect-[5/7] w-11 overflow-hidden rounded-[3px] border bg-paper text-[10px] text-muted-foreground transition",
-                  i === index ? "border-primary ring-2 ring-primary/30" : "border-border opacity-75 hover:opacity-100",
+                  i === index ? "border-primary ring-2 ring-primary/40" : "border-input opacity-80 hover:opacity-100",
                 )}
               >
                 {s.kind === "cover" && <BookCover {...book} className="h-full rounded-none shadow-none" />}

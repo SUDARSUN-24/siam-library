@@ -7,17 +7,20 @@ type Props = {
   t: Dict;
   locale: Locale;
   size?: "sm" | "lg";
+  /** white pill — for coloured backgrounds (book page header) */
+  solid?: boolean;
   className?: string;
 };
 
-export function StatusBadge({ status, dueDate, t, locale, size = "sm", className }: Props) {
+export function StatusBadge({ status, dueDate, t, locale, size = "sm", solid, className }: Props) {
   const available = status === "AVAILABLE";
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full font-medium",
         size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
-        available ? "bg-available/10 text-available" : "bg-borrowed/10 text-borrowed",
+        solid ? "bg-white shadow-sm" : available ? "bg-available/10" : "bg-borrowed/10",
+        available ? "text-available" : "text-borrowed",
         className,
       )}
     >

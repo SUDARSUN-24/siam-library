@@ -117,7 +117,7 @@ export function SearchBox({ t, action, defaultValue = "", hidden = {}, compact }
       <div
         className={cn(
           "flex items-center gap-2 rounded-full border border-input bg-card p-1.5 pl-4 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20",
-          compact ? "shadow-none" : "shadow-[0_2px_12px_-4px_rgba(29,36,51,.18)]",
+          compact ? "shadow-none" : "border-2 pl-5",
         )}
       >
         <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -144,15 +144,15 @@ export function SearchBox({ t, action, defaultValue = "", hidden = {}, compact }
           autoComplete="off"
           enterKeyHint="search"
           className={cn(
-            "min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/80",
-            compact ? "h-9" : "h-10",
+            "min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground",
+            compact ? "h-9" : "h-11",
           )}
         />
         <button
           type="submit"
           className={cn(
-            "shrink-0 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90",
-            compact ? "h-9" : "h-10",
+            "shrink-0 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover",
+            compact ? "h-9" : "h-11 sm:px-7",
           )}
         >
           {t.searchButton}

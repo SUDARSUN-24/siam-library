@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { AutoSubmitSelect } from "../auto-submit-select";
 import { BookGrid } from "../book-card";
 import { FilterPanel, activeFilterCount, type FilterPanelProps } from "./filter-panel";
@@ -54,13 +54,19 @@ export function CatalogueView(props: Props) {
   const panel = <FilterPanel {...props} />;
 
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pt-6 lg:grid-cols-[13.5rem_minmax(0,1fr)]">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pt-6 pb-16 lg:grid-cols-[15rem_minmax(0,1fr)] lg:pt-8">
       <aside className="hidden lg:block" aria-label={t.filtersHeading}>
-        <div className="sticky top-20">{panel}</div>
+        <div className="sticky top-22 rounded-xl border border-input bg-card p-4 shadow-(--shadow-card)">
+          <h2 className="mb-4 flex items-center gap-2 border-b border-border pb-3 font-sans text-sm font-semibold">
+            <SlidersHorizontal className="size-4 text-primary" aria-hidden="true" />
+            {t.filtersHeading}
+          </h2>
+          {panel}
+        </div>
       </aside>
 
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
           <p className="mr-auto text-sm text-muted-foreground" aria-live="polite">
             <span data-testid="result-count" className="font-medium text-foreground">
               {total === 1 ? t.bookCount1 : fmt(t.booksCount, { n: total.toLocaleString("en-US") })}
@@ -109,10 +115,12 @@ export function CatalogueView(props: Props) {
                 <Link
                   href={c.href}
                   aria-label={fmt(t.removeFilter, { name: c.label })}
-                  className="inline-flex h-8 items-center gap-1 rounded-full bg-primary/8 pr-2 pl-3 text-sm text-primary hover:bg-primary/15"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary pr-2 pl-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary-hover"
                 >
                   {c.label}
-                  <X className="size-3.5" aria-hidden="true" />
+                  <span className="grid size-4.5 place-items-center rounded-full bg-white/20">
+                    <X className="size-3" strokeWidth={2.5} aria-hidden="true" />
+                  </span>
                 </Link>
               </li>
             ))}
@@ -125,6 +133,7 @@ export function CatalogueView(props: Props) {
               rows.map((row) => (
                 <section key={row} className="pb-9">
                   <h2 className="mb-4 flex items-center gap-3 font-serif text-lg font-semibold">
+                    <span className="h-5 w-1 rounded-full bg-gold" aria-hidden="true" />
                     {fmt(t.shelfRowHeading, { row })}
                     <span className="h-px flex-1 bg-border" aria-hidden="true" />
                   </h2>
@@ -135,7 +144,7 @@ export function CatalogueView(props: Props) {
               <BookGrid books={books} t={t} locale={locale} showPhotos={showPhotos} withSidebar />
             )
           ) : (
-            <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
+            <div className="rounded-xl border border-dashed border-input bg-cream px-6 py-14 text-center">
               {total > 0 ? (
                 <>
                   <p className="font-serif text-lg font-semibold">{t.pageEmpty}</p>

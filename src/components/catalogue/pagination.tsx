@@ -49,7 +49,7 @@ export function Pagination({ t, basePath, params, fixed, page, pageCount }: Prop
                 className={cn(
                   item,
                   "tabular-nums",
-                  n === page ? "bg-primary font-medium text-primary-foreground" : "hover:bg-muted hover:text-primary",
+                  n === page ? "bg-primary font-semibold text-primary-foreground shadow-sm" : "border border-transparent hover:border-input hover:bg-card hover:text-primary",
                 )}
               >
                 {n}
