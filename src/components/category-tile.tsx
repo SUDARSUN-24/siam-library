@@ -39,17 +39,26 @@ const icons: Record<string, LucideIcon> = {
   "Literary Studies": Library,
 };
 
-/** Bright icon colours, one per tile in turn (icon on its own soft tint). */
-const palette = [
-  "bg-sky-soft text-hue-blue",
-  "bg-rose-soft text-hue-raspberry",
-  "bg-mint-soft text-hue-teal",
-  "bg-sun-soft text-hue-orange",
-  "bg-lilac-soft text-hue-violet",
-];
+/** Bright tones: icon colour on its own soft tint (and the solid hue for accents). */
+export const tones = [
+  { soft: "bg-sky-soft", text: "text-hue-blue", solid: "bg-hue-blue" },
+  { soft: "bg-rose-soft", text: "text-hue-raspberry", solid: "bg-hue-raspberry" },
+  { soft: "bg-mint-soft", text: "text-hue-teal", solid: "bg-hue-teal" },
+  { soft: "bg-sun-soft", text: "text-hue-orange", solid: "bg-hue-orange" },
+  { soft: "bg-lilac-soft", text: "text-hue-violet", solid: "bg-hue-violet" },
+] as const;
 
-export function CategoryTile({ name, count, t, locale, index = 0 }: { name: string; count: number; t: Dict; locale: Locale; index?: number }) {
-  const Icon = icons[name] ?? BookMarked;
+const known = Object.keys(icons);
+
+/** Fixed icon + colour per category, the same on every page (home tiles, filters, category page). */
+export function categoryStyle(name: string) {
+  const i = known.indexOf(name);
+  const n = i >= 0 ? i : [...name].reduce((h, c) => h + c.charCodeAt(0), 0);
+  return { Icon: icons[name] ?? BookMarked, tone: tones[n % tones.length] };
+}
+
+export function CategoryTile({ name, count, t, locale }: { name: string; count: number; t: Dict; locale: Locale }) {
+  const { Icon, tone } = categoryStyle(name);
   const label = categoryLabel(name, locale);
   const other = categoryLabel(name, locale === "th" ? "en" : "th");
   return (
@@ -58,7 +67,7 @@ export function CategoryTile({ name, count, t, locale, index = 0 }: { name: stri
       data-testid="category-tile"
       className="group surface flex h-full items-center gap-3 rounded-xl p-3 transition-[translate,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-(--shadow-lift)"
     >
-      <span className={`grid size-11 shrink-0 place-items-center rounded-xl transition-transform group-hover:scale-105 ${palette[index % palette.length]}`}>
+      <span className={`grid size-11 shrink-0 place-items-center rounded-xl transition-transform group-hover:scale-105 ${tone.soft} ${tone.text}`}>
         <Icon className="size-5" aria-hidden="true" />
       </span>
       <span className="flex min-w-0 flex-col">

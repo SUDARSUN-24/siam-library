@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Lock, MapPin } from "lucide-react";
+import { ArrowLeft, Barcode, Building2, CalendarDays, Hash, Languages, Lock, MapPin, Tag, UserRound, type LucideIcon } from "lucide-react";
 import { BookCover } from "@/components/book-cover";
+import { categoryStyle, tones } from "@/components/category-tile";
 import { PreviewViewer, type ViewerPage } from "@/components/preview-viewer";
 import { StatusBadge } from "@/components/status-badge";
 import { canViewPreview } from "@/lib/access";
@@ -46,19 +47,28 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
       }))
     : [];
 
-  const details: [string, React.ReactNode][] = [
-    [t.author, book.author],
+  const cat = categoryStyle(book.category);
+  // label, value, icon, colour — each detail gets its own bright tone
+  const details: [string, React.ReactNode, LucideIcon, (typeof tones)[number]][] = [
+    [t.author, book.author, UserRound, tones[0]],
     [
       t.category,
-      <Link key="c" href={categoryPath(book.category)} className="text-primary underline-offset-4 hover:text-primary-hover hover:underline">
+      <Link
+        key="c"
+        href={categoryPath(book.category)}
+        className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold underline-offset-4 hover:underline ${cat.tone.soft} ${cat.tone.text}`}
+      >
+        <cat.Icon className="size-3.5" aria-hidden="true" />
         {categoryLabel(book.category, locale)}
       </Link>,
+      Tag,
+      tones[1],
     ],
-    [t.language, book.language === "th" ? t.langTh : t.langEn],
-    [t.year, book.year ? (locale === "th" ? `${book.year + 543} (${book.year})` : book.year) : null],
-    [t.publisher, book.publisher],
-    [t.isbn, book.isbn],
-    [t.bookCode, book.code],
+    [t.language, book.language === "th" ? t.langTh : t.langEn, Languages, tones[2]],
+    [t.year, book.year ? (locale === "th" ? `${book.year + 543} (${book.year})` : book.year) : null, CalendarDays, tones[3]],
+    [t.publisher, book.publisher, Building2, tones[4]],
+    [t.isbn, book.isbn, Barcode, tones[0]],
+    [t.bookCode, book.code, Hash, tones[2]],
   ];
 
   const ink = shelfInk(book.shelf.color);
@@ -147,17 +157,42 @@ export default async function BookPage({ params }: PageProps<"/book/[code]">) {
           </div>
         </section>
 
-        {/* Details + QR */}
+        {/* Where to find it · details · QR */}
         <section className="flex flex-col gap-6 pt-8 lg:col-start-1 lg:row-start-1 lg:pt-10">
+          <div className="relative overflow-hidden rounded-2xl border-2 border-sun/70 bg-sun-soft p-4 sm:p-5">
+            <span className="pointer-events-none absolute -top-10 -right-10 size-32 rounded-full bg-white/60" aria-hidden="true" />
+            <p className="relative text-sm font-medium">{t.endBody}</p>
+            <div className="relative mt-3 flex items-center gap-3">
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl text-white shadow-sm" style={{ background: ink }} aria-hidden="true">
+                <MapPin className="size-6" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-muted-foreground">{t.endWhere}</p>
+                <p className="font-serif text-xl leading-tight font-bold sm:text-2xl">{location}</p>
+                <p className="truncate text-sm text-muted-foreground">{shelfName}</p>
+              </div>
+            </div>
+            <p className="relative mt-3 border-t border-sun/50 pt-3 text-[13px] leading-relaxed text-muted-foreground">
+              {book.status === "AVAILABLE"
+                ? fmt(t.endCounter, { days: config.loanDays })
+                : fmt(t.endBorrowedNote, { date: book.dueDate ? formatDate(book.dueDate, locale) : "—" })}
+            </p>
+          </div>
+
           <div>
             <h2 className="section-title mb-4">{t.details}</h2>
-            <dl className="surface divide-y divide-border overflow-hidden rounded-xl">
+            <dl className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {details
                 .filter(([, v]) => v !== null && v !== undefined && v !== "")
-                .map(([k, v]) => (
-                  <div key={k} className="grid grid-cols-[7.5rem_1fr] gap-3 px-4 py-2.5 text-sm">
-                    <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="min-w-0 font-medium break-words">{v}</dd>
+                .map(([k, v, Icon, tone]) => (
+                  <div key={k} className="surface min-w-0 rounded-xl p-3 odd:last:col-span-2">
+                    <dt className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                      <span className={`grid size-7 shrink-0 place-items-center rounded-lg ${tone.soft} ${tone.text}`} aria-hidden="true">
+                        <Icon className="size-4" />
+                      </span>
+                      {k}
+                    </dt>
+                    <dd className="mt-1.5 min-w-0 text-[15px] font-semibold break-words">{v}</dd>
                   </div>
                 ))}
             </dl>

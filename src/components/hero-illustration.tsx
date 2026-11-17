@@ -62,3 +62,28 @@ export function HeroIllustration({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Catalogue headers: a small row of bright book spines (decorative). */
+const strip = [
+  { h: 92, c: "var(--hue-blue)" },
+  { h: 120, c: "var(--sun)" },
+  { h: 104, c: "var(--hue-raspberry)" },
+  { h: 132, c: "var(--hue-teal)" },
+  { h: 98, c: "var(--crimson)" },
+  { h: 116, c: "var(--hue-orange)" },
+  { h: 88, c: "var(--hue-violet)" },
+];
+
+export function SpineStrip({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 220 140" className={className} aria-hidden="true" focusable="false">
+      {strip.map((b, i) => (
+        <g key={i}>
+          <rect x={8 + i * 29} y={136 - b.h} width="24" height={b.h} rx="3" fill={b.c} opacity=".9" />
+          <rect x={8 + i * 29} y={136 - b.h + 12} width="24" height="4" fill="#fff" opacity=".5" />
+        </g>
+      ))}
+      <rect x="0" y="134" width="220" height="6" rx="2" fill="var(--wood)" />
+    </svg>
+  );
+}

@@ -57,9 +57,11 @@ export function CatalogueView(props: Props) {
     <div className="bg-page">
     <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pt-6 pb-16 lg:grid-cols-[15rem_minmax(0,1fr)] lg:pt-8">
       <aside className="hidden lg:block" aria-label={t.filtersHeading}>
-        <div className="sticky top-22 rounded-xl border border-input bg-card p-4 shadow-(--shadow-card)">
+        <div className="sticky top-22 overflow-hidden rounded-xl border border-input border-t-4 border-t-primary bg-card p-4 shadow-(--shadow-card)">
           <h2 className="mb-4 flex items-center gap-2 border-b border-border pb-3 font-sans text-sm font-semibold">
-            <SlidersHorizontal className="size-4 text-primary" aria-hidden="true" />
+            <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground" aria-hidden="true">
+              <SlidersHorizontal className="size-4" />
+            </span>
             {t.filtersHeading}
           </h2>
           {panel}
@@ -69,7 +71,7 @@ export function CatalogueView(props: Props) {
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
           <p className="mr-auto text-sm text-muted-foreground" aria-live="polite">
-            <span data-testid="result-count" className="font-medium text-foreground">
+            <span data-testid="result-count" className="inline-flex items-center rounded-full bg-sky-soft px-3 py-1 font-semibold text-hue-blue">
               {total === 1 ? t.bookCount1 : fmt(t.booksCount, { n: total.toLocaleString("en-US") })}
             </span>
             {pageCount > 1 && books.length > 0 && (

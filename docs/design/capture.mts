@@ -28,6 +28,7 @@ const pages = [
   { name: "shelf", url: "/shelf/A" },
   { name: "book", url: "/book/A-001" },
   { name: "search", url: "/books?q=data" },
+  { name: "category", url: "/category/novel" },
 ];
 
 async function settle(page: Page) {

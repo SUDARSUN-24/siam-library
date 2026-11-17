@@ -119,9 +119,9 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <div className="mx-auto max-w-6xl px-4 py-10 sm:py-12">
             <h2 className="section-title mb-5">{t.categoriesHeading}</h2>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {byCount.map((c, i) => (
+              {byCount.map((c) => (
                 <li key={c.slug}>
-                  <CategoryTile name={c.name} count={c.count} t={t} locale={locale} index={i} />
+                  <CategoryTile name={c.name} count={c.count} t={t} locale={locale} />
                 </li>
               ))}
             </ul>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CatalogueView } from "@/components/catalogue/catalogue-view";
+import { SpineStrip } from "@/components/hero-illustration";
 import { SearchBox } from "@/components/search-box";
 import { loadCatalogue } from "@/lib/catalogue-page";
 import { getDict } from "@/lib/i18n";
@@ -24,8 +25,9 @@ export default async function BooksPage({ searchParams }: PageProps<"/books">) {
 
   return (
     <>
-      <section className="border-b-4 border-hue-blue/15 bg-sky-soft">
-        <div className="mx-auto max-w-6xl px-4 pt-7 pb-7 sm:pt-10 sm:pb-8">
+      <section className="relative overflow-hidden border-b-4 border-hue-blue/15 bg-sky-soft">
+        <SpineStrip className="pointer-events-none absolute right-4 bottom-0 hidden h-36 md:block lg:right-[max(1rem,calc((100vw-72rem)/2+1rem))]" />
+        <div className="relative mx-auto max-w-6xl px-4 pt-7 pb-7 sm:pt-10 sm:pb-8">
           <h1 className="font-serif text-[1.75rem] leading-tight font-bold sm:text-4xl" data-testid="catalogue-heading">
             {params.q ? (
               <>

@@ -131,6 +131,8 @@ The live site uses the same emails with different random passwords — never wri
 - 2026-11-18: brighter redesign of the public site (sunny hero with bookshelf illustration and
   3 steps, coloured section tints, red footer; no navy). Shelf colours A `#1f63d6`, B `#c2410c`,
   C `#c2185b` (data migrations `*_shelf_colours`, `*_bright_shelf_colours`).
+  Book page: "Find it at" card + colourful detail tiles; catalogue: coloured filter groups, shelf
+  letters, category icons (fixed colour per category: `categoryStyle()` in category-tile.tsx).
 - 2026-11-15: `/books` catalogue (filters, sort, 24/page), category pages, home rows, pg_trgm
   search + live suggestions (`/api/suggest`). Playwright locally: 93 passed / 7 skipped.
   Migration `*_catalogue_search` (pg_trgm + indexes) applied to Neon preview + main.

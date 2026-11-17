@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CatalogueView } from "@/components/catalogue/catalogue-view";
+import { categoryStyle } from "@/components/category-tile";
+import { SpineStrip } from "@/components/hero-illustration";
 import { getCategoriesWithCounts } from "@/lib/books";
 import { loadCatalogue } from "@/lib/catalogue-page";
 import { categoryLabel, fmt } from "@/lib/dict";
@@ -33,21 +35,30 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
   const { t, locale } = data;
   const label = categoryLabel(category.name, locale);
   const other = categoryLabel(category.name, locale === "th" ? "en" : "th");
+  const { Icon, tone } = categoryStyle(category.name);
 
   return (
     <>
-      <section className="border-b-4 border-hue-blue/15 bg-sky-soft">
-        <div className="mx-auto max-w-6xl px-4 pt-5 pb-8 sm:pt-8">
+      <section className={`relative overflow-hidden border-b-4 border-black/5 ${tone.soft}`}>
+        <SpineStrip className="pointer-events-none absolute right-4 bottom-0 hidden h-32 md:block lg:right-[max(1rem,calc((100vw-72rem)/2+1rem))]" />
+        <div className="relative mx-auto max-w-6xl px-4 pt-5 pb-8 sm:pt-8">
           <Link href="/books" className="inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t.backToBooks}
           </Link>
-          <p className="eyebrow mt-5 font-semibold text-primary">{t.category}</p>
-          <h1 className="mt-1 font-serif text-[1.75rem] leading-tight font-bold sm:text-4xl">{label}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {other !== label && <>{other} · </>}
-            {category.count === 1 ? t.bookCount1 : fmt(t.booksCount, { n: category.count.toLocaleString("en-US") })}
-          </p>
+          <div className="mt-5 flex items-center gap-4">
+            <span className={`grid size-16 shrink-0 place-items-center rounded-2xl text-white shadow-(--shadow-card) sm:size-20 ${tone.solid}`} aria-hidden="true">
+              <Icon className="size-8 sm:size-10" />
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow font-semibold text-primary">{t.category}</p>
+              <h1 className="mt-1 font-serif text-[1.75rem] leading-tight font-bold sm:text-4xl">{label}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {other !== label && <>{other} · </>}
+                {category.count === 1 ? t.bookCount1 : fmt(t.booksCount, { n: category.count.toLocaleString("en-US") })}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
       <CatalogueView {...data} basePath={`/category/${encodeURIComponent(category.slug)}`} fixed={data.fixedKeys} />
