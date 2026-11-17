@@ -28,6 +28,7 @@ export function proxy(request: NextRequest) {
     // inline style attributes (cover colours) and toast styles need 'unsafe-inline' for styles only
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data:",
+    "media-src 'self' blob:",
     "font-src 'self'",
     "connect-src 'self'",
     "object-src 'none'",

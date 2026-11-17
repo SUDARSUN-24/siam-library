@@ -2,11 +2,14 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Camera, ImagePlus, Loader2, Trash2, Type } from "lucide-react";
 import { deletePage, movePage } from "@/app/admin/actions";
 import { fmt, type Dict } from "@/lib/dict";
 import { cn } from "@/lib/utils";
+
+const DocumentScanner = dynamic(() => import("@/components/admin/document-scanner").then((mod) => mod.DocumentScanner));
 
 export type ManagedPage = { id: string; order: number; type: "IMAGE" | "TEXT"; imageUrl: string | null; snippet: string | null };
 
@@ -55,11 +58,12 @@ async function downscale(file: File, maxBytes: number): Promise<Blob> {
 export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
   const router = useRouter();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [scanning, setScanning] = useState(false);
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const remaining = maxPages - pages.length;
 
-  async function upload(fileList: FileList | null) {
+  async function upload(fileList: FileList | File[] | null) {
     const files = [...(fileList ?? [])];
     if (!files.length) return;
     if (remaining <= 0) return toast.error(fmt(t.adminPagesFull, { max: maxPages }));
@@ -108,21 +112,26 @@ export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
       <p className="text-sm text-muted-foreground">{fmt(t.adminPagesHint, { max: maxPages })}</p>
 
       <div className="grid grid-cols-2 gap-2 sm:flex">
-        <label
+        <button
+          type="button"
+          onClick={() => setScanning(true)}
+          disabled={busy || remaining <= 0}
           className={cn(uploadBtn, "bg-primary text-primary-foreground hover:bg-primary/90", (busy || remaining <= 0) && disabledCls)}
         >
           <Camera className="size-5" aria-hidden="true" />
           <span>{t.adminTakePhoto}</span>
-          <input
-            ref={cameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            disabled={busy || remaining <= 0}
-            onChange={(e) => upload(e.target.files)}
-          />
-        </label>
+        </button>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          disabled={busy || remaining <= 0}
+          onChange={(e) => upload(e.target.files)}
+          aria-label={t.scanNativeCamera}
+          data-testid="native-camera"
+        />
         <label className={cn(uploadBtn, "border border-border bg-card hover:border-primary/40", (busy || remaining <= 0) && disabledCls)}>
           <ImagePlus className="size-5" aria-hidden="true" />
           <span>{t.adminChooseImages}</span>
@@ -149,6 +158,15 @@ export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
         </span>
       </div>
 
+      {scanning && (
+        <DocumentScanner
+          t={t}
+          onClose={() => setScanning(false)}
+          onSave={(file) => { setScanning(false); void upload([file]); }}
+          onNativeCamera={() => { setScanning(false); cameraRef.current?.click(); }}
+        />
+      )}
+
       {pages.length > 0 && (
         <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="page-list">
           {pages.map((p, i) => (
@@ -156,7 +174,7 @@ export function PagesManager({ t, bookId, pages, maxPages, maxBytes }: Props) {
               <div className="relative aspect-[5/7] bg-paper">
                 {p.type === "IMAGE" && p.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  <img src={p.imageUrl} alt="" className="h-full w-full object-contain" loading="lazy" />
                 ) : (
                   <div className="h-full overflow-hidden p-3 font-serif text-[10px] leading-relaxed text-muted-foreground">
                     <Type className="mb-1 size-3.5" aria-hidden="true" />

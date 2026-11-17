@@ -4,6 +4,7 @@
 /.env
 /.env.*
 !/.env.example
+/passwords.txt
 /.pgdata/
 /uploads/
 /src/generated/
