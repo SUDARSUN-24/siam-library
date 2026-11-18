@@ -69,8 +69,7 @@ This is how the live site https://siam-library.vercel.app runs.
 | Piece | Service | Notes |
 |---|---|---|
 | App | Vercel (Next.js, serverless functions in `sin1` / Singapore — `vercel.json` `regions`) | Project `siam-library`; build = `scripts/vercel-build.mjs` (Production: `prisma migrate deploy` then `next build`), `postinstall` runs `prisma generate` |
-| Source | GitHub `SUDARSUN-24/siam-library` (git remote `live`), connected to the Vercel project | Push to `main` → production deploy; any other branch → preview deploy |
-| Team repo | GitHub `scheppersstudio/siam-library` (private, git remote `origin`) | Shared by the team via GitHub Desktop. Not connected to Vercel — pushing here deploys nothing |
+| Source | GitHub `SUDARSUN-24/siam-library` (private, git remote `origin`), connected to the Vercel project | Push to `main` → production deploy; any other branch → preview deploy. GitHub Pages must stay **off** (it would publish the source) |
 | Database | **Neon** project `siam-library-db-sg` (free plan, `ap-southeast-1` / Singapore), added through the Vercel Marketplace | Branch `main` = production. Same region as `sin1`, so each query is fast |
 | Preview database | Neon branch **`preview`** (child of `main`) | Its URLs are set for the Vercel **Preview** environment only |
 | Page photos | **Vercel Blob**, store `siam-library-photos` (Production) and `siam-library-photos-preview` (Preview), both **private**, `sin1` | Not reachable by URL — served only through `/api/uploads/[file]` after `canViewPreview()` |
@@ -196,10 +195,8 @@ run when `DATABASE_URL` is not localhost, `DATABASE_URL_UNPOOLED` is set, on Ver
 ### Deploying an update
 ```powershell
 npm run build; npm run lint     # must pass locally
-git pull origin main            # get the team's latest work (team repo)
-git push origin main            # share it with the team (deploys nothing)
-git push live main              # Vercel builds and deploys production automatically
-git push live my-branch         # → preview deployment (preview database + photo store)
+git push origin main            # Vercel builds and deploys production automatically
+git push origin my-branch       # → preview deployment (preview database + photo store)
 vercel logs --environment production --since 15m    # runtime errors
 ```
 `vercel --prod` from the PC still works as a manual fallback.
@@ -209,9 +206,7 @@ When something breaks on the live site (rollback, data restore, uptime alerts): 
 > any deployment (Git push *or* CLI from this repo) whose commit author is a different
 > GitHub user ("the commit author doesn't have permission to create deployments").
 > Commit with an email that belongs to the GitHub account `SUDARSUN-24`
-> (`git config user.email <that email>`).
-> Team members' commits are fine in `origin`. When the owner deploys, the newest commit
-> pushed to `live` must be the owner's own (e.g. a merge commit), or Vercel blocks it.
+> (`git config user.email <that email>` — the SUDARSUN-24 no-reply address is used).
 
 ### Testing the live site
 ```powershell

@@ -12,12 +12,12 @@ has a QR code that opens its page — most students arrive from a QR scan on the
 Student: Sudasun, B.Sc. Information Technology, Siam University (university project).
 
 **Live site (main target): https://siam-library.vercel.app** — Vercel (`sin1` Singapore) +
-Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` (git
-remote **`live`**) is connected: push to `main` = production deploy, other branches = preview
-deploys (own Neon branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
-**Working repo**: private `scheppersstudio/siam-library` = git remote **`origin`** (GitHub
-Desktop push/pull). Pushing there deploys nothing; the owner pushes to `live` to deploy.
-All work so far is by the owner alone (SUDARSUN-24); no other collaborators yet.
+Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` (private,
+git remote `origin`, also in GitHub Desktop) is connected: push to `main` = production deploy,
+other branches = preview deploys (own Neon branch + own Blob store). Local dev must keep
+working too. See docs/DEPLOYMENT.md §3. Solo project: every commit is by SUDARSUN-24.
+GitHub Pages must stay OFF for this repo (it was on by mistake and published the source; turned
+off 2026-11-18). `scheppersstudio/siam-library` is an old, disconnected copy — not used.
 
 ## Tech stack
 (Libraries and versions: see `package.json`.) `cn` comes from the `cn` package, not a local util.
@@ -41,14 +41,13 @@ npm run test:e2e            # Playwright (needs db running + seeded; reuses :300
 npm run user:create -- <email> <name> <ADMIN|STAFF>
 npm run user:reset-2fa -- <email>   # lost phone: turns two-step login off for that account
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
-git push origin main           # shared team repo — deploys nothing
-git push live main             # deploys production (GitHub integration); vercel --prod = fallback
+git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
                                # production builds run `prisma migrate deploy` first (scripts/vercel-build.mjs)
 ```
 Live-site operations (logs, env pull, migrating the live DB, E2E against live, Neon CLI): the
 `live-ops` skill. `vercel env pull` only ever to a file OUTSIDE the repo — never into `.env.local`.
 Something broken on the live site: docs/RUNBOOK.md (symptom table, rollback, Neon restore,
-uptime monitor). Health check `/api/health`; monitor `.github/workflows/uptime.yml` (team repo,
+uptime monitor). Health check `/api/health`; monitor `.github/workflows/uptime.yml` (GitHub Actions,
 every 30 min 06–22 Thai time — never more often: each check wakes Neon, free plan = 100 CU-h).
 Commits must be authored by the GitHub account that owns the Vercel project (SUDARSUN-24),
 or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.

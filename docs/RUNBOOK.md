@@ -9,8 +9,8 @@ are found in the first 5 minutes.
 | Health check | https://siam-library.vercel.app/api/health → `{"status":"ok"}` = app **and** database work |
 | Hosting status | https://www.vercel-status.com |
 | Database status | https://neonstatus.com |
-| Uptime alerts | GitHub issues titled `[uptime] Site is down` in `scheppersstudio/siam-library` |
-| Who can deploy | the owner (SUDARSUN-24) — `git push live main` |
+| Uptime alerts | GitHub issues titled `[uptime] Site is down` in `SUDARSUN-24/siam-library` |
+| Who can deploy | the owner (SUDARSUN-24) — `git push origin main` |
 
 Commands below are for PowerShell in `C:\Projects\siam-library`, with the Vercel and Neon
 CLIs signed in (`vercel whoami`, `neon me`). Neon commands need
@@ -44,7 +44,7 @@ CLIs signed in (`vercel whoami`, `neon me`). Neon commands need
 | A book shows wrong details or status | Data, not a bug | Staff fix it in `/admin`. A bug only if it will not save |
 | Staff cannot upload a page photo | File too big / not an image / storage | Photos must be real images ≤ 10 MB, ≤ 10 pages per book; otherwise `vercel logs` |
 | A QR sticker opens "not found" | The book's code was changed or the book deleted | Check the book in `/admin`; reprint the sticker |
-| A push to `live` did not deploy | Build failed (often a migration) or commit author not SUDARSUN-24 | Vercel → Deployments → the failed build log. The old version keeps running meanwhile |
+| A push to `main` did not deploy | Build failed (often a migration) or commit author not SUDARSUN-24 | Vercel → Deployments → the failed build log. The old version keeps running meanwhile |
 | Data deleted or overwritten by mistake | — | **Act fast**: §4. The free database plan keeps only **6 hours** of history |
 
 ## 3. Roll back a bad deploy
@@ -55,7 +55,7 @@ vercel rollback <url-of-the-last-good-deployment> --yes
 vercel rollback status                       # wait until it says done
 ```
 The site serves the old version within a minute. Then fix the code, test locally
-(`npm run build`, `npm run lint`, `npm run test:e2e`) and deploy again with `git push live main`.
+(`npm run build`, `npm run lint`, `npm run test:e2e`) and deploy again with `git push origin main`.
 A rollback does **not** undo database migrations — that is why every migration must work
 with the previous code too (CLAUDE.md, "Migrations").
 
@@ -102,17 +102,17 @@ Add a line to the log below. Repeated causes show what to improve.
 
 ## Uptime monitor
 
-- **What:** GitHub Actions workflow `.github/workflows/uptime.yml` in the team repo
-  `scheppersstudio/siam-library`. It checks `/api/health` and the home page every
+- **What:** GitHub Actions workflow `.github/workflows/uptime.yml` in
+  `SUDARSUN-24/siam-library`. It checks `/api/health` and the home page every
   30 minutes from 06:00 to 22:00 Thailand time, 3 tries 20 seconds apart.
 - **Alert:** if a check still fails after 3 tries it opens the issue
   `[uptime] Site is down` (one at a time; later failures add a comment) and closes it with
   "Back up at …" when the site answers again. Everyone **watching** the repo gets an email,
-  and a phone notification with the GitHub Mobile app. Make sure both of you watch the repo
-  (Watch → All activity) and have email on for issues (github.com/settings/notifications).
-- **Run it now:** `gh workflow run uptime.yml -R scheppersstudio/siam-library` (or the
+  and a phone notification with the GitHub Mobile app. Keep the repo on Watch → All activity
+  and email on for issues (github.com/settings/notifications).
+- **Run it now:** `gh workflow run uptime.yml -R SUDARSUN-24/siam-library` (or the
   "Run workflow" button on the repo's Actions tab).
-- **Pause it:** `gh workflow disable uptime.yml -R scheppersstudio/siam-library`
+- **Pause it:** `gh workflow disable uptime.yml -R SUDARSUN-24/siam-library`
   (`enable` to resume).
 - **Why not more often:** each check wakes the database for about 5 minutes. On Neon's free
   plan (100 compute-hours a month) checks every 5 minutes would keep it awake all month and
