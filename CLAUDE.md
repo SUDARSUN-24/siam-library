@@ -12,9 +12,11 @@ has a QR code that opens its page — most students arrive from a QR scan on the
 Student: Sudasun, B.Sc. Information Technology, Siam University (university project).
 
 **Live site (main target): https://siam-library.vercel.app** — Vercel (`sin1` Singapore) +
-Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` is
-connected: push to `main` = production deploy, other branches = preview deploys (own Neon
-branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
+Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` (git
+remote **`live`**) is connected: push to `main` = production deploy, other branches = preview
+deploys (own Neon branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
+**Team repo** (2 people): private `scheppersstudio/siam-library` = git remote **`origin`**
+(GitHub Desktop push/pull). Pushing there deploys nothing; only the owner pushes to `live`.
 
 ## Tech stack
 (Libraries and versions: see `package.json`.) `cn` comes from the `cn` package, not a local util.
@@ -38,7 +40,8 @@ npm run test:e2e            # Playwright (needs db running + seeded; reuses :300
 npm run user:create -- <email> <name> <ADMIN|STAFF>
 npm run user:reset-2fa -- <email>   # lost phone: turns two-step login off for that account
 docker compose up -d --build   # full stack on a server (see docs/DEPLOYMENT.md)
-git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
+git push origin main           # shared team repo — deploys nothing
+git push live main             # deploys production (GitHub integration); vercel --prod = fallback
                                # production builds run `prisma migrate deploy` first (scripts/vercel-build.mjs)
 ```
 Live-site operations (logs, env pull, migrating the live DB, E2E against live, Neon CLI): the

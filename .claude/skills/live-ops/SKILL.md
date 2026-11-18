@@ -9,7 +9,8 @@ Vercel CLI is installed globally and logged in; the project is already linked in
 Full background: docs/DEPLOYMENT.md §3–5.
 
 ```powershell
-git push origin main           # deploys production (GitHub integration); vercel --prod = fallback
+git push live main             # deploys production (GitHub integration); vercel --prod = fallback
+                               # (`origin` = team repo scheppersstudio/siam-library — deploys nothing)
 vercel logs --environment production --since 15m
 vercel env pull <file OUTSIDE the repo> --environment production --yes   # never into .env.local
 npm run db:deploy              # with DATABASE_URL(_UNPOOLED) from Neon loaded → migrate live DB
