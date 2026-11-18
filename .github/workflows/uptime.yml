@@ -1,0 +1,77 @@
+# Uptime monitor for the live site. See docs/RUNBOOK.md ("Uptime monitor").
+# If the site is down it opens ONE GitHub issue titled "[uptime] Site is down"
+# (everyone watching the repo gets an email / GitHub Mobile notification) and closes it
+# with a comment when the site is back.
+name: Uptime check
+
+on:
+  schedule:
+    # Every 30 minutes from 06:00 to 21:30 Thailand time (UTC+7) = 23:00–14:30 UTC.
+    # Not more often: every check wakes the Neon database for ~5 minutes, and the free
+    # plan has 100 compute-hours a month. This schedule uses about 20 of them.
+    - cron: "7,37 23,0-14 * * *"
+  workflow_dispatch: # "Run workflow" button / gh workflow run uptime.yml
+
+permissions:
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://siam-library.vercel.app
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Check the site (3 tries, 20 s apart)
+        id: probe
+        run: |
+          check() {  # $1 = path, $2 = text the body must contain
+            for try in 1 2 3; do
+              code=$(curl -sS -o body.txt -w '%{http_code}' --max-time 30 "$SITE$1" 2>err.txt) || code="no answer ($(head -c 200 err.txt))"
+              if [ "$code" = "200" ] && grep -q "$2" body.txt; then echo "OK   $1 ($try)"; return 0; fi
+              echo "FAIL $1 try $try: $code"
+              [ $try -lt 3 ] && sleep 20
+            done
+            echo "$1 -> $code" >> failures.txt
+            return 1
+          }
+          ok=true
+          check /api/health '"status":"ok"' || ok=false
+          check / '</html>' || ok=false
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          [ "$ok" = true ] || cat failures.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open an issue (site down)
+        if: steps.probe.outputs.ok != 'true'
+        run: |
+          open=$(gh issue list --state open --search '"[uptime] Site is down" in:title' --json number --jq '.[0].number')
+          when=$(TZ=Asia/Bangkok date '+%Y-%m-%d %H:%M')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "Still down at $when (Thailand time): $(paste -sd ';' failures.txt). [Run]($RUN_URL)"
+          else
+            {
+              echo "The uptime check failed at **$when** (Thailand time), after 3 tries."
+              echo
+              echo '```'; cat failures.txt; echo '```'
+              echo
+              echo "First steps: open $SITE/api/health, then follow **docs/RUNBOOK.md**."
+              echo "This issue closes by itself when the site answers again. [Run]($RUN_URL)"
+            } > issue.md
+            gh issue create --title "[uptime] Site is down" --body-file issue.md
+          fi
+          exit 1   # mark the run as failed too
+
+      - name: Close the issue (site back up)
+        if: steps.probe.outputs.ok == 'true'
+        run: |
+          open=$(gh issue list --state open --search '"[uptime] Site is down" in:title' --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue close "$open" --comment "Back up at $(TZ=Asia/Bangkok date '+%Y-%m-%d %H:%M') (Thailand time). [Run]($RUN_URL)"
+          fi

@@ -203,6 +203,7 @@ git push live my-branch         # → preview deployment (preview database + pho
 vercel logs --environment production --since 15m    # runtime errors
 ```
 `vercel --prod` from the PC still works as a manual fallback.
+When something breaks on the live site (rollback, data restore, uptime alerts): docs/RUNBOOK.md.
 
 > **Commit author must be the Vercel account owner.** On the Hobby plan Vercel blocks
 > any deployment (Git push *or* CLI from this repo) whose commit author is a different

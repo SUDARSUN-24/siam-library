@@ -46,6 +46,9 @@ git push live main             # deploys production (GitHub integration); vercel
 ```
 Live-site operations (logs, env pull, migrating the live DB, E2E against live, Neon CLI): the
 `live-ops` skill. `vercel env pull` only ever to a file OUTSIDE the repo — never into `.env.local`.
+Something broken on the live site: docs/RUNBOOK.md (symptom table, rollback, Neon restore,
+uptime monitor). Health check `/api/health`; monitor `.github/workflows/uptime.yml` (team repo,
+every 30 min 06–22 Thai time — never more often: each check wakes Neon, free plan = 100 CU-h).
 Commits must be authored by the GitHub account that owns the Vercel project (SUDARSUN-24),
 or Vercel (Hobby) blocks the deployment — see docs/DEPLOYMENT.md §3.
 Demo logins (LOCAL seed only): admin@library.siam.edu / SiamAdmin2026! · staff@library.siam.edu / SiamStaff2026!
