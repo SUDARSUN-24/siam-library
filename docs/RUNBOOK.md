@@ -1,7 +1,7 @@
 # When something breaks — runbook
 
-For whoever gets the call (the owner or a teammate). Read top to bottom; most problems are
-found in the first 5 minutes.
+For whoever gets the call (today: the owner, SUDARSUN-24). Read top to bottom; most problems
+are found in the first 5 minutes.
 
 | | |
 |---|---|

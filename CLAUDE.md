@@ -15,8 +15,9 @@ Student: Sudasun, B.Sc. Information Technology, Siam University (university proj
 Neon Postgres (Singapore) + private Vercel Blob. GitHub `SUDARSUN-24/siam-library` (git
 remote **`live`**) is connected: push to `main` = production deploy, other branches = preview
 deploys (own Neon branch + own Blob store). Local dev must keep working too. See docs/DEPLOYMENT.md §3.
-**Team repo** (2 people): private `scheppersstudio/siam-library` = git remote **`origin`**
-(GitHub Desktop push/pull). Pushing there deploys nothing; only the owner pushes to `live`.
+**Working repo**: private `scheppersstudio/siam-library` = git remote **`origin`** (GitHub
+Desktop push/pull). Pushing there deploys nothing; the owner pushes to `live` to deploy.
+All work so far is by the owner alone (SUDARSUN-24); no other collaborators yet.
 
 ## Tech stack
 (Libraries and versions: see `package.json`.) `cn` comes from the `cn` package, not a local util.
